@@ -3,7 +3,7 @@ exports.setEnv = (environment) ->
   ###
     Common config
   ###
-  exports.HOSTNAME = "localhost"
+  exports.HOSTNAME = "0.0.0.0"
   exports.PORT = 8080
   exports.PUBLIC_PATH = "public"
   exports.VIEWS_ENGINE = "jade"

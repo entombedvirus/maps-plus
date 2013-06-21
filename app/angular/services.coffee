@@ -1,42 +1,50 @@
 "use strict"
 
 ###
-  Services
+	Services
 ###
 
 socketServer = document.domain
+namespaces = ['chat', 'map']
 
 angular.module("NetTalk.services", [])
 .value("version", "0.2.2")
-.factory("Socket",
-  ["$rootScope",
-    ($rootScope) ->
+.factory("Socket", ($rootScope) ->
 
-      socketService = {}
+			socketService = {}
+			sockets = {}
+			opts =
+				reconnect: false
 
-      socket = io.connect(socketServer)
+			for namespace in namespaces
+				sockets[namespace] = io.connect(socketServer + '/' +  namespace, opts)
+				do (namespace) ->
+					socketService[namespace] =
+						emit: (event, data) ->
+							sockets[namespace].json.emit event, data
 
-      socketService.emit = (event, data) ->
-        socket.emit event, data
+						on: (event, callback) ->
+							sockets[namespace].on event, (data) ->
+								$rootScope.$apply ->
+									callback data
 
-      socketService.on = (event, callback) ->
-        socket.on event, (data) ->
-          $rootScope.$apply ->
-            callback data
-
-      socketService
-  ]
+			socketService
 )
-.factory "User",
-  ["$resource",
-    ($resource) ->
+.factory("Animation", ($window) ->
+	requestId = null
+	paused = false
+	animate = ->
+		requestId = $window.requestAnimationFrame(animate) unless paused
+		TWEEN.update()
+	
+	{
+		start: ->
+			$window.cancelAnimationFrame(requestId) if requestId?
+			paused = false
+			animate()
 
-      url = "/users/:userId"
-
-      $resource url, {}, {
-
-        list: {method: "GET", params: {userId: ""}},
-        get: {method: "GET", params: {}}
-
-      }
-  ]
+		stop: ->
+			paused = true
+			$window.cancelAnimationFrame(requestId) if requestId?
+	}
+)

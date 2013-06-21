@@ -104,7 +104,7 @@ module.exports = (grunt) ->
 				tasks: ['copy:server', 'coffee:server', 'notify:watch']
 			client:
 				files: [appConfig.app + "/angular/{,*/}*.{coffee,js}"]
-				tasks: ['copy:client', 'coffee:client', 'ngmin:client', 'notify:watch']
+				tasks: ['copy:client', 'coffee:client', 'notify:watch']
 			css:
 				files: [appConfig.root + "/styles/*.less"]
 				tasks: ['less', 'notify:watch']
@@ -123,7 +123,7 @@ module.exports = (grunt) ->
 				options:
 					logConcurrentOutput: true
 
-	grunt.registerTask 'build', ['copy', 'coffee', 'ngmin', 'less']
+	grunt.registerTask 'build', ['copy', 'coffee', 'less']
 	grunt.registerTask 'dev', ['clean', 'build', 'concurrent:dev']
 
 	grunt.registerTask 'default', ['dev']
