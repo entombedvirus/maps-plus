@@ -1,0 +1,6 @@
+#!/bin/sh
+
+killall node
+nohup node .tmp/app/index.js &
+
+echo "node restarted..."

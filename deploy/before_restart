@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# trigger a fresh build
+npm install
+grunt clean build
+

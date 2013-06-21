@@ -23,7 +23,8 @@
     "express": "3.1.1",
     "jade": "0.28.2",
     "socket.io": "0.9.14",
-    "uglify-js": "2.2.5"
+    "uglify-js": "2.2.5",
+    "forever": "~0.10.8"
   },
   "engines": {
     "node": ">=0.8"
