@@ -87,6 +87,14 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 	peerDisconnected = true
 	plane = $window.jQuery('#plane')
 
+	$scope.onMapLoad = ->
+		google.maps.event.addListener $scope.map, "rightclick", (e) ->
+			console.log "rightclick"
+			new google.maps.Marker
+				map: $scope.map
+				position: e.latLng
+			console.log "pos", e.latLng.toString()
+
 	do animatePlane = ->
 		# ensure a smooth animation when the angles wrap around
 		diff = Math.abs(nextHeading - currentHeading)

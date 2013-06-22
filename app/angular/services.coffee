@@ -48,3 +48,23 @@ angular.module("NetTalk.services", [])
 			$window.cancelAnimationFrame(requestId) if requestId?
 	}
 )
+
+.factory  'idGenerator', ->
+	stringLength = 4
+	positions = new Array(stringLength)
+	positions = (Math.ceil(Math.random() * 100) for i in positions)
+
+	{
+		next: ->
+			positions = (pos + 1 for pos in positions)
+			i++
+			(String.fromCharCode((pos % 26) + 97) for pos in positions).join ''
+	}
+
+.factory 'planeManager', (idGenerator) ->
+	planes = {}
+
+	{
+		generate: ->
+			planeId = idGenerator.next() until planeId? and planes[planeId]?
+	}
