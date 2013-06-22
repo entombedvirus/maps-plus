@@ -52,6 +52,7 @@ app.directive 'onTouchMove', ->
 		compile: ->
 			(scope, elem, attrs) ->
 				elem.on 'touchmove mousemove', (e) ->
+					e.preventDefault()
 					cb = scope[attrs.onTouchMove]
 					cb(e)
 	}
