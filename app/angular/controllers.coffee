@@ -64,7 +64,7 @@ app.controller 'UserControlsCtrl', ($scope, $timeout, $window, Socket) ->
 			angle: curAngle
 		Socket.ctrl.emit 'user_ctrl', ctrlData
 		console.log "broadcasting state", ctrlData
-		$timeout broadcastUserState, 1000
+		$timeout broadcastUserState, 250
 	
 	resume = ->
 		paused = false
