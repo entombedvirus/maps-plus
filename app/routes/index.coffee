@@ -1,14 +1,21 @@
 
 ###
-  GET home page
+	GET home page
 ###
+
+isMobileDevice = (req) ->
+	/mobile/i.test req.header('user-agent')
 
 exports.index = (request, response) ->
-  response.render "index"
+	if isMobileDevice request
+		response.render "index_mobile"
+	else
+		response.render "index_pc"
 
 ###
-  GET partial templates
+	GET partial templates
 ###
 
 exports.partials = (request, response) ->
-  response.render "partials/" + request.params.name
+	response.render "partials/" + request.params.name
+

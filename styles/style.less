@@ -3,9 +3,18 @@
 html { height: 100% }
 body { height: 100% }
 
+.rotate(@degrees: 0deg) {
+	-webkit-transform: rotate(@degrees);
+	transform: rotate(@degrees);
+}
+
 #header { color: @nice-blue; }
 #mapView { display: block; height: 100%; width: 100%; }
-.viewport { height: 100% }
+.viewport { 
+	height: 100%;
+	width: 100%;
+	background-color: @nice-blue;
+}
 
 #msgPanel { 
 	display: block;
@@ -18,4 +27,20 @@ body { height: 100% }
 	padding: 0;
 	background-color: #fafafa;
 	z-index: 1;
+}
+
+#userControls {
+	height: 100%;
+
+	img {
+		display: block;
+		width: 128px;
+		height: 128px;
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		margin-top: -64px;
+		margin-left: -64px;
+	}
+
 }

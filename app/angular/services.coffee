@@ -5,7 +5,7 @@
 ###
 
 socketServer = document.domain
-namespaces = ['chat', 'map']
+namespaces = ['ctrl', 'chat', 'map']
 
 angular.module("NetTalk.services", [])
 .value("version", "0.2.2")

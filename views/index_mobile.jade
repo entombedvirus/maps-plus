@@ -1,0 +1,17 @@
+extends layout
+
+block content
+  section(ng-controller="AppCtrl")
+  section(id="userControls", ng-controller="UserControlsCtrl", class="container-fluid", on-touch-move="onUserTouchMove")
+    img(id="arrow", src="images/direction_arrow.png", width="128", height="128", alt="")
+  script(src='http://code.jquery.com/jquery-2.0.2.js')
+  script(src='/lib/polyfills/requestAnimationFrame.js')
+  script(src='/lib/socket.io/socket.io.js')
+  script(src='/lib/angular/angular.js')
+  script(src='/lib/angular/angular-resource.js')
+  script(src='/lib/tweenjs/src/Tween.js')
+  script(src='/angular/app.js')
+  script(src='/angular/services.js')
+  script(src='/angular/controllers.js')
+  script(src='/angular/filters.js')
+  script(src='/angular/directives.js')

@@ -4,6 +4,16 @@ exports.configure = (io) ->
 		Socket.IO config
 	###
 
+	ctrlSocket = io.of('/ctrl')
+	ctrlSocket.on "connection", (socket) ->
+		socket.on "user_ctrl", (ctrlData) ->
+			socket.broadcast.emit "sync_ui", ctrlData
+
+		socket.on "disconnect", ->
+			console.log "client disconnected", socket.id
+			socket.broadcast.emit 'peer_disconnected',
+				client_id: socket.id
+
 	chatSocket = io.of('/chat')
 	chatSocket.on "connection", (socket) ->
 		console.log "New socket connected!"

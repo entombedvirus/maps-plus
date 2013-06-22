@@ -43,3 +43,15 @@ app.directive "googleMaps", ->
 
 				scope.$eval(attrs.onload) if attrs.onload?
 	}
+
+app.directive 'onTouchMove', ->
+
+	{
+		restrict: 'A',
+		
+		compile: ->
+			(scope, elem, attrs) ->
+				elem.on 'touchmove mousemove', (e) ->
+					cb = scope[attrs.onTouchMove]
+					cb(e)
+	}

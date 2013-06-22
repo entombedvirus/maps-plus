@@ -21,11 +21,11 @@ app.set "port", config.PORT
 app.set "views", path.join __dirname, '..', config.VIEWS_PATH
 app.set "view engine", config.VIEWS_ENGINE
 app.set "public_path", path.join __dirname, '..', config.PUBLIC_PATH
+app.use express.logger("dev")
 app.use express.bodyParser()
 app.use express.methodOverride()
 app.use app.router
 app.use express.favicon("#{app.get('public_path')}/#{config.IMAGES_PATH}/favicon.ico")
-console.log "static path", app.get("public_path")
 app.use express["static"] app.get("public_path")
 
 ###
