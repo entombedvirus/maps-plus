@@ -41,7 +41,9 @@ app.directive "googleMaps", ->
 					mapTypeId: GoogleMaps.MapTypeId.ROADMAP
 				)
 
-				scope.$eval(attrs.onload) if attrs.onload?
+				if attrs.onload?
+					cb = scope[attrs.onload]
+					cb()
 	}
 
 app.directive 'onTouchMove', ->

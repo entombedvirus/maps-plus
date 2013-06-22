@@ -39,12 +39,7 @@ app.controller 'UserControlsCtrl', ($scope, $timeout, $window, Socket) ->
 		curX = e.originalEvent.pageX
 		curY = e.originalEvent.pageY
 
-	#animateArrow = ->
-		#$window.requestAnimationFrame animateArrow
-		#curAngle = Math.atan2(curY - centerY, curX - centerX)
-		#arrow.css
-			#transform: "rotate(#{curAngle}rad)"
-	animateArrow = ->
+	do animateArrow = ->
 		newAngle = Math.atan2(curY - centerY, curX - centerX)
 
 		# ensure a smooth animation when the angles wrap around
@@ -62,8 +57,6 @@ app.controller 'UserControlsCtrl', ($scope, $timeout, $window, Socket) ->
 			curAngle = newAngle
 			animateArrow()
 		tween.start()
-
-	animateArrow()
 
 	do broadcastUserState = ->
 		return if paused
@@ -90,11 +83,30 @@ app.controller 'SocketCtrl', ($scope, Socket) ->
 app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 	SPEED = 40
 	currentHeading = 0 # Due North
+	nextHeading = 0
 	peerDisconnected = true
+	plane = $window.jQuery('#plane')
+
+	do animatePlane = ->
+		# ensure a smooth animation when the angles wrap around
+		diff = Math.abs(nextHeading - currentHeading)
+		if diff > 180
+			if nextHeading > 0
+				currentHeading += 360
+			else
+				currentHeading += -360
+		tween = new TWEEN.Tween({angle: currentHeading}).to({angle: nextHeading}, 250)
+		tween.onUpdate ->
+			plane.css
+				transform: "rotate(#{@angle}deg)"
+		tween.onComplete ->
+			currentHeading = @angle
+			animatePlane()
+		tween.start()
 
 	onSyncUI = (ctrlData) ->
 		angle = ctrlData.angle
-		currentHeading = (angle * 180/Math.PI) + 90
+		nextHeading = (angle * 180/Math.PI) + 90
 		if peerDisconnected is true
 			peerDisconnected = false
 			updateMap()
