@@ -51,14 +51,22 @@ angular.module("NetTalk.services", [])
 
 .factory  'idGenerator', ->
 	stringLength = 4
-	positions = new Array(stringLength)
-	positions = (Math.ceil(Math.random() * 100) for i in positions)
+	base = 26
+	offset = Math.random() * Math.pow(base, stringLength)
+	# >> 0 get rid of the fractional part
+	counter = offset >> 0
+
+	convertToBase26 = (number) ->
+		str = []
+		until number is 0
+			str.unshift String.fromCharCode((number % base) + 97)
+			number = (number / base) >> 0
+		str.unshift 'a' until str.length >= stringLength
+		str[0...stringLength].join ''
 
 	{
 		next: ->
-			positions = (pos + 1 for pos in positions)
-			i++
-			(String.fromCharCode((pos % 26) + 97) for pos in positions).join ''
+			convertToBase26 counter++
 	}
 
 .factory 'planeManager', (idGenerator) ->
