@@ -70,9 +70,19 @@ angular.module("NetTalk.services", [])
 	}
 
 .factory 'planeManager', (idGenerator) ->
+	PRESET_POSITIONS =
+		goldenGatePark: [37.76847577247013, -122.49210834503174]
+		crissyField: [37.80542699570327, -122.46883749961853]
+		sfo: [37.61967039695652, -122.37112998962402]
+
 	planes = {}
+	for name, pos of PRESET_POSITIONS
+		code = idGenerator.next()
+		planes[code] =
+			code: code
+			currentPosition: pos
 
 	{
-		generate: ->
-			planeId = idGenerator.next() until planeId? and planes[planeId]?
+		findByCode: (code) ->
+			planes[code]
 	}

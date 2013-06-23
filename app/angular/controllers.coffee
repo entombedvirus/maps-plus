@@ -85,9 +85,11 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 	currentHeading = 0 # Due North
 	nextHeading = 0
 	peerDisconnected = true
-	plane = $window.jQuery('#plane')
+	planeSprite = $window.jQuery('#plane')
+	planes = new Object()
 
 	$scope.onMapLoad = ->
+		startPositionBroadcast()
 		google.maps.event.addListener $scope.map, "rightclick", (e) ->
 			console.log "rightclick"
 			new google.maps.Marker
@@ -95,7 +97,7 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 				position: e.latLng
 			console.log "pos", e.latLng.toString()
 
-	do animatePlane = ->
+	do animatePlaneSprite = ->
 		# ensure a smooth animation when the angles wrap around
 		diff = Math.abs(nextHeading - currentHeading)
 		if diff > 180
@@ -105,11 +107,11 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 				currentHeading += -360
 		tween = new TWEEN.Tween({angle: currentHeading}).to({angle: nextHeading}, 250)
 		tween.onUpdate ->
-			plane.css
+			planeSprite.css
 				transform: "rotate(#{@angle}deg)"
 		tween.onComplete ->
 			currentHeading = @angle
-			animatePlane()
+			animatePlaneSprite()
 		tween.start()
 
 	onSyncUI = (ctrlData) ->
@@ -118,6 +120,7 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 		if peerDisconnected is true
 			peerDisconnected = false
 			updateMap()
+	Socket.ctrl.on 'sync_ui', onSyncUI
 	
 	updateMap = ->
 		curCenter = $scope.map.getCenter()
@@ -125,11 +128,51 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 		$window.requestAnimationFrame updateMap unless peerDisconnected
 		newCenter = google.maps.geometry.spherical.computeOffset curCenter, SPEED, currentHeading
 		$scope.map.panTo newCenter
+	
+	startPositionBroadcast = ->
+		lastBroadcastedPosition = null
+		do broadcastMapPosition = ->
+			$timeout broadcastMapPosition, 1000
+			curCenter = $scope.map.getCenter()
+			if !lastBroadcastedPosition? or !curCenter.equals(lastBroadcastedPosition)
+				lastBroadcastedPosition = curCenter
+				Socket.map.emit 'map_position_changed', [curCenter.lat(), curCenter.lng()]
+
+	onPlanePositionChanged = (data) ->
+		plane = getPlaneFor(data.client_id)
+		plane.position =
+			lat: data.position[0]
+			lng: data.position[1]
+		plane.tween || animateSinglePlane(plane)
+	Socket.map.on 'plane_position_changed', onPlanePositionChanged
 
 	onPeerDisconnected = (data) ->
 		peerDisconnected = true
 
-	Socket.ctrl.on 'sync_ui', onSyncUI
 	Socket.ctrl.on 'peer_disconnected', onPeerDisconnected
 	Socket.ctrl.on 'peer_inactive', onPeerDisconnected
+
+	getPlaneFor = (client_id) ->
+		planes[client_id] ?=
+			client_id: client_id
+			speed: 8
+			marker: new google.maps.Marker
+				map: $scope.map
+
+	animateSinglePlane = (plane) ->
+		plane.tween?.stop()
+		currentPos = plane.marker.getPosition()
+		if currentPos?
+			currentPos =
+				lat: currentPos.lat()
+				lng: currentPos.lng()
+			plane.tween = tween = new TWEEN.Tween(currentPos)
+			tween.to plane.position, 5000/plane.speed
+			tween.onUpdate ->
+				plane.marker.setPosition new google.maps.LatLng(@lat, @lng)
+			tween.onComplete ->
+				plane.tween = null
+			tween.start()
+		else
+			plane.marker.setPosition new google.maps.LatLng(plane.position.lat, plane.position.lng)
 
