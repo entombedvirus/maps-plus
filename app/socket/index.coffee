@@ -1,5 +1,7 @@
 PEER_IDLE_TIMEOUT_MILLIS = 5000
 
+planeManager = require('../modules/plane_manager')
+
 exports.configure = (io) ->
 
 	###
@@ -15,6 +17,8 @@ exports.configure = (io) ->
 				idleTime = Date.now() - ts
 				if idleTime > PEER_IDLE_TIMEOUT_MILLIS
 					timer = null
+					socket.get "aircraftCode", (err, code) ->
+						planeManager.releaseControl(code)
 					socket.broadcast.emit("peer_inactive")
 				else
 					timer = setTimeout startTimeoutTimer, PEER_IDLE_TIMEOUT_MILLIS
@@ -35,7 +39,20 @@ exports.configure = (io) ->
 
 	mapSocket = io.of('/map')
 	mapSocket.on "connection", (socket) ->
-		socket.on "map_position_changed", (pos) ->
-			socket.broadcast.emit "plane_position_changed",
-				client_id: socket.id
-				position: pos
+		socket.emit "aircraftData", planeManager.getDataForBroadcast()
+
+		socket.on "map_position_changed", (data) ->
+			planeManager.updatePosition data.code, data.position
+			socket.broadcast.emit "plane_position_changed", data
+
+		socket.on "acquire_control_challenge", (data) ->
+			success = planeManager.acquireControl data.code, socket.client_id
+			if success
+				socket.set "aircraftCode", planeManager.findByCode(data.code).code
+				socket.emit "acquire_control_challenge_response",
+					success: true
+					code: data.code
+			else
+				socket.emit "acquire_control_challenge_response",
+					success: false
+					code: data.code

@@ -86,7 +86,9 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 	nextHeading = 0
 	peerDisconnected = true
 	planeSprite = $window.jQuery('#plane')
-	planes = new Object()
+	serverAircraftData = new Object()
+	aircraftSprites = new Object()
+	myAircraft = null
 
 	$scope.onMapLoad = ->
 		startPositionBroadcast()
@@ -97,49 +99,57 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 				position: e.latLng
 			console.log "pos", e.latLng.toString()
 
-	do animatePlaneSprite = ->
-		# ensure a smooth animation when the angles wrap around
-		diff = Math.abs(nextHeading - currentHeading)
-		if diff > 180
-			if nextHeading > 0
-				currentHeading += 360
-			else
-				currentHeading += -360
-		tween = new TWEEN.Tween({angle: currentHeading}).to({angle: nextHeading}, 250)
-		tween.onUpdate ->
-			planeSprite.css
-				transform: "rotate(#{@angle}deg)"
-		tween.onComplete ->
-			currentHeading = @angle
-			animatePlaneSprite()
-		tween.start()
+	Socket.map.on 'aircraftData', (aircraftData) ->
+		serverAircraftData = aircraftData
+		# TODO: make the user choose this
+		onPlanePositionChanged(aircraft) for code, aircraft of serverAircraftData
 
-	onSyncUI = (ctrlData) ->
-		angle = ctrlData.angle
-		nextHeading = (angle * 180/Math.PI) + 90
-		if peerDisconnected is true
-			peerDisconnected = false
-			updateMap()
-	Socket.ctrl.on 'sync_ui', onSyncUI
+	#do animatePlaneSprite = ->
+		## ensure a smooth animation when the angles wrap around
+		#diff = Math.abs(nextHeading - currentHeading)
+		#if diff > 180
+			#if nextHeading > 0
+				#currentHeading += 360
+			#else
+				#currentHeading += -360
+		#tween = new TWEEN.Tween({angle: currentHeading}).to({angle: nextHeading}, 250)
+		#tween.onUpdate ->
+			#planeSprite.css
+				#transform: "rotate(#{@angle}deg)"
+		#tween.onComplete ->
+			#currentHeading = @angle
+			#animatePlaneSprite()
+		#tween.start()
+
+	#onSyncUI = (ctrlData) ->
+		#angle = ctrlData.angle
+		#nextHeading = (angle * 180/Math.PI) + 90
+		#if peerDisconnected is true
+			#peerDisconnected = false
+			#updateMap()
+	#Socket.ctrl.on 'sync_ui', onSyncUI
 	
-	updateMap = ->
-		curCenter = $scope.map.getCenter()
-		return unless curCenter?
-		$window.requestAnimationFrame updateMap unless peerDisconnected
-		newCenter = google.maps.geometry.spherical.computeOffset curCenter, SPEED, currentHeading
-		$scope.map.panTo newCenter
+	#updateMap = ->
+		#curCenter = $scope.map.getCenter()
+		#return unless curCenter?
+		#$window.requestAnimationFrame updateMap unless peerDisconnected
+		#newCenter = google.maps.geometry.spherical.computeOffset curCenter, SPEED, currentHeading
+		#$scope.map.panTo newCenter
 	
 	startPositionBroadcast = ->
 		lastBroadcastedPosition = null
 		do broadcastMapPosition = ->
 			$timeout broadcastMapPosition, 1000
+			return unless myAircraft?
 			curCenter = $scope.map.getCenter()
 			if !lastBroadcastedPosition? or !curCenter.equals(lastBroadcastedPosition)
 				lastBroadcastedPosition = curCenter
-				Socket.map.emit 'map_position_changed', [curCenter.lat(), curCenter.lng()]
+				Socket.map.emit 'map_position_changed', 
+					code: myAircraft.code
+					position: [curCenter.lat(), curCenter.lng()]
 
 	onPlanePositionChanged = (data) ->
-		plane = getPlaneFor(data.client_id)
+		plane = getPlaneSpriteFor(data.code)
 		plane.position =
 			lat: data.position[0]
 			lng: data.position[1]
@@ -152,12 +162,24 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 	Socket.ctrl.on 'peer_disconnected', onPeerDisconnected
 	Socket.ctrl.on 'peer_inactive', onPeerDisconnected
 
-	getPlaneFor = (client_id) ->
-		planes[client_id] ?=
-			client_id: client_id
-			speed: 8
+	getPlaneSpriteFor = (code) ->
+		sprite = aircraftSprites[code] ?=
+			speed: serverAircraftData[code].speed
 			marker: new google.maps.Marker
 				map: $scope.map
+		google.maps.event.addListener sprite.marker, "click", ->
+			Socket.map.emit 'acquire_control_challenge',
+				code: code
+		sprite
+
+	Socket.map.on 'acquire_control_challenge_response', (data) ->
+		if data.success
+			sprite = aircraftSprites[data.code]
+			sprite.marker.getMap().panTo sprite.marker.getPosition()
+			sprite.marker.setMap null
+			planeSprite.show 'fade'
+			myAircraft = serverAircraftData[data.code]
+
 
 	animateSinglePlane = (plane) ->
 		plane.tween?.stop()
