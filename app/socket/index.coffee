@@ -8,8 +8,8 @@ exports.configure = (io) ->
 		Socket.IO config
 	###
 
-	ctrlSocket = io.of('/ctrl')
-	ctrlSocket.on "connection", (socket) ->
+	ctrlSockets = io.of('/ctrl')
+	ctrlSockets.on "connection", (socket) ->
 		timer = null
 		do startTimeoutTimer = ->
 			socket.get "lastActivityTimestamp", (err, ts) ->
@@ -23,11 +23,13 @@ exports.configure = (io) ->
 				else
 					timer = setTimeout startTimeoutTimer, PEER_IDLE_TIMEOUT_MILLIS
 
-		socket.on "user_ctrl", (ctrlData) ->
+		socket.on "user_ctrl", (data) ->
 			socket.set "lastActivityTimestamp", Date.now()
 			startTimeoutTimer() unless timer?
-			pairedSocket = getPairedSocketFor(socket)
-			pairedSocket.emit "sync_ui", ctrlData if pairedSocket?
+			aircraft = planeManager.findByCode data.code
+			if aircraft?
+				aircraft.position = data.position
+				aircraft.heading = data.heading
 
 		socket.on "disconnect", ->
 			console.log "client disconnected", socket.id
@@ -39,22 +41,29 @@ exports.configure = (io) ->
 				client_id: socket.id
 
 		socket.on "acquire_control_challenge", (data) ->
+			aircraft = planeManager.findByCode(data.code)
 			success = planeManager.acquireControl data.code, socket.client_id
-			if success
+			if aircraft? && success
 				socket.set "aircraftCode", planeManager.findByCode(data.code).code
 				socket.emit "acquire_control_challenge_response",
 					success: true
 					code: data.code
+					position: aircraft.position
+					heading: aircraft.heading
+					speed: aircraft.speed
 			else
 				socket.emit "acquire_control_challenge_response",
 					success: false
 					code: data.code
 
-	mapSocket = io.of('/map')
-	mapSocket.on "connection", (socket) ->
-		socket.emit "aircraftData", planeManager.getDataForBroadcast()
 
+	mapSockets = io.of('/map')
+
+	do broadcastAircraftPositions = ->
+		setTimeout broadcastAircraftPositions, 500
+		mapSockets.emit "aircraftData", planeManager.getDataForBroadcast()
+
+	mapSockets.on "connection", (socket) ->
 		socket.on "map_position_changed", (data) ->
-			planeManager.updatePosition data.code, data.position
 			socket.broadcast.emit "plane_position_changed", data
 

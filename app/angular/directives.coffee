@@ -39,6 +39,8 @@ app.directive "googleMaps", ->
 					center: new GoogleMaps.LatLng lat, lng
 					zoom: (attrs.zoom? && parseInt attrs.zoom) || DEFAULT_ZOOM_LEVEL
 					mapTypeId: GoogleMaps.MapTypeId.ROADMAP
+					draggable: false
+					disableDefaultUI: true
 				)
 
 				cb = scope[attrs.onload]

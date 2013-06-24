@@ -9,24 +9,27 @@ app = angular.module('NetTalk.controllers')
 app.controller 'AppCtrl', (Animation) ->
 	Animation.start()
 
-app.controller 'SplashCtrl', ($scope, $window, Socket) ->
+app.controller 'SplashCtrl', ($scope, $window, ctrlSocket, aircraftControls) ->
 	$scope.controlChallengeWasSuccessful = false
 	$scope.onSubmit = ->
-		Socket.ctrl.emit 'acquire_control_challenge',
+		ctrlSocket.emit 'acquire_control_challenge',
 			code: $scope.userEnteredCode
-	Socket.ctrl.on 'acquire_control_challenge_response', (data) ->
+	ctrlSocket.on 'acquire_control_challenge_response', (data) ->
 		$scope.controlChallengeWasSuccessful = data.success
+		aircraftControls.code = data.code
+		aircraftControls.position = data.position
+		aircraftControls.heading = data.heading
+		aircraftControls.speed = data.speed
 
-
-app.controller 'UserControlsCtrl', ($scope, $timeout, $window, Socket) ->
+app.controller 'UserControlsCtrl', ($scope, $timeout, $window, ctrlSocket, aircraftControls) ->
 	curX = 0
 	curY = 0
-	curAngle = 0
 	arrow = angular.element document.getElementById('arrow')
 	arrowX = arrow.offset().left
 	arrowY = arrow.offset().top
 	centerX = arrowX + (arrow.width() / 2)
 	centerY = arrowY +  (arrow.height() / 2)
+	arrowRotation = 0
 	lastActivityTimestamp = new Date().getTime()
 	paused = false
 
@@ -36,7 +39,7 @@ app.controller 'UserControlsCtrl', ($scope, $timeout, $window, Socket) ->
 		if idleTime > 5000
 			timer = null
 			paused = true
-			Socket.ctrl.emit 'peer_inactive'
+			ctrlSocket.emit 'peer_inactive'
 		else
 			timer = setTimeout startIdleTimer, 5000
 			resume() if paused
@@ -49,50 +52,53 @@ app.controller 'UserControlsCtrl', ($scope, $timeout, $window, Socket) ->
 		curY = e.originalEvent.pageY
 
 	do animateArrow = ->
-		newAngle = Math.atan2(curY - centerY, curX - centerX)
-
+		newAngle = aircraftControls.heading
 		# ensure a smooth animation when the angles wrap around
-		diff = Math.abs(newAngle - curAngle)
+		diff = Math.abs(newAngle - arrowRotation)
 		if diff > Math.PI
 			if newAngle > 0
-				curAngle += 2 * Math.PI
+				arrowRotation += 2 * Math.PI
 			else
-				curAngle += -2 * Math.PI
-		tween = new TWEEN.Tween({angle: curAngle}).to({angle: newAngle}, 25)
+				arrowRotation += -2 * Math.PI
+		tween = new TWEEN.Tween({angle: arrowRotation}).to({angle: newAngle}, 25)
 		tween.onUpdate ->
 			arrow.css
 				transform: "rotate(#{@angle}rad)"
 		tween.onComplete ->
-			curAngle = newAngle
+			arrowRotation = newAngle
 			animateArrow()
 		tween.start()
 
-	do broadcastUserState = ->
+	do updateAircraftPosition = ->
+		$timeout updateAircraftPosition, 1000 / 60
 		return if paused
+		curLatLng = new google.maps.LatLng aircraftControls.position...
+		nextLatLng = google.maps.geometry.spherical.computeOffset(
+			curLatLng,
+			aircraftControls.speed,
+			aircraftControls.heading * 180 / Math.PI
+		)
+		aircraftControls.position = [nextLatLng.lat(), nextLatLng.lng()]
+		aircraftControls.heading = Math.atan2(curY - centerY, curX - centerX) + Math.PI/2
+
+	do broadcastUserState = ->
+		$timeout broadcastUserState, 500
 		ctrlData =
-			angle: curAngle
-		Socket.ctrl.emit 'user_ctrl', ctrlData
-		console.log "broadcasting state", ctrlData
-		$timeout broadcastUserState, 250
+			heading: aircraftControls.heading
+			code: aircraftControls.code
+			position: aircraftControls.position
+
+		return if paused
+		ctrlSocket.emit 'user_ctrl', ctrlData
+		console.log "broadcasting state", ctrlData.position
 	
 	resume = ->
 		paused = false
 		broadcastUserState()
 
-
-app.controller 'SocketCtrl', ($scope, Socket) ->
-	$scope.response = "waiting..."
-	Socket.chat.on "pong", (data) ->
-		console.log "got pong msg", data
-		$scope.response = data.data
-
-	$scope.ping = ->
-		Socket.chat.emit("ping", {})
-
-app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
-	SPEED = 40
+app.controller 'MapCtrl', ($scope, $timeout, $window, mapSocket, ctrlSocket) ->
+	#SPEED = 40
 	currentHeading = 0 # Due North
-	nextHeading = 0
 	peerDisconnected = true
 	planeSprite = $window.jQuery('#plane')
 	serverAircraftData = new Object()
@@ -100,7 +106,7 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 	myAircraft = null
 
 	$scope.onMapLoad = ->
-		startPositionBroadcast()
+		#startPositionBroadcast()
 		google.maps.event.addListener $scope.map, "rightclick", (e) ->
 			console.log "rightclick"
 			new google.maps.Marker
@@ -108,13 +114,10 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 				position: e.latLng
 			console.log "pos", e.latLng.toString()
 
-	Socket.map.on 'aircraftData', (aircraftData) ->
-		serverAircraftData = aircraftData
-		# TODO: make the user choose this
-		onPlanePositionChanged(aircraft) for code, aircraft of serverAircraftData
-
 	#do animatePlaneSprite = ->
+		#return unless myAircraft?
 		## ensure a smooth animation when the angles wrap around
+		#nextHeading = myAircraft.heading
 		#diff = Math.abs(nextHeading - currentHeading)
 		#if diff > 180
 			#if nextHeading > 0
@@ -136,7 +139,7 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 		#if peerDisconnected is true
 			#peerDisconnected = false
 			#updateMap()
-	#Socket.ctrl.on 'sync_ui', onSyncUI
+	#ctrlSocket.on 'sync_ui', onSyncUI
 	
 	#updateMap = ->
 		#curCenter = $scope.map.getCenter()
@@ -145,37 +148,50 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 		#newCenter = google.maps.geometry.spherical.computeOffset curCenter, SPEED, currentHeading
 		#$scope.map.panTo newCenter
 	
-	startPositionBroadcast = ->
-		lastBroadcastedPosition = null
-		do broadcastMapPosition = ->
-			$timeout broadcastMapPosition, 1000
-			return unless myAircraft?
-			curCenter = $scope.map.getCenter()
-			if !lastBroadcastedPosition? or !curCenter.equals(lastBroadcastedPosition)
-				lastBroadcastedPosition = curCenter
-				Socket.map.emit 'map_position_changed', 
-					code: myAircraft.code
-					position: [curCenter.lat(), curCenter.lng()]
+	#startPositionBroadcast = ->
+		#lastBroadcastedPosition = null
+		#do broadcastMapPosition = ->
+			#$timeout broadcastMapPosition, 1000
+			#return unless myAircraft?
+			#curCenter = $scope.map.getCenter()
+			#if !lastBroadcastedPosition? or !curCenter.equals(lastBroadcastedPosition)
+				#lastBroadcastedPosition = curCenter
+				#mapSocket.emit 'map_position_changed', 
+					#code: myAircraft.code
+					#position: [curCenter.lat(), curCenter.lng()]
 
-	onPlanePositionChanged = (data) ->
+	onPlanePositionChanged = (code, data) ->
 		plane = getPlaneSpriteFor(data.code)
-		plane.position =
-			lat: data.position[0]
-			lng: data.position[1]
-		plane.tween || animateSinglePlane(plane)
-	Socket.map.on 'plane_position_changed', onPlanePositionChanged
+		plane.tween || animateSinglePlane(plane, data)
+
+	mapSocket.on 'aircraftData', (aircraftData) ->
+		serverAircraftData = aircraftData
+		# TODO: make the user choose this
+		onPlanePositionChanged(code, aircraft) for code, aircraft of serverAircraftData
+
 
 	onPeerDisconnected = (data) ->
 		peerDisconnected = true
 
-	Socket.ctrl.on 'peer_disconnected', onPeerDisconnected
-	Socket.ctrl.on 'peer_inactive', onPeerDisconnected
+	ctrlSocket.on 'peer_disconnected', onPeerDisconnected
+	ctrlSocket.on 'peer_inactive', onPeerDisconnected
+
+	followAircraft = (code) ->
+		if myAircraft?
+			planeSprite.hide 'fade'
+			oldPlaneSprite = getPlaneSpriteFor myAircraft.code
+			oldPlaneSprite.marker.setMap $scope.map
+		sprite = aircraftSprites[code]
+		sprite.marker.getMap().panTo sprite.marker.getPosition()
+		sprite.marker.setMap null
+		planeSprite.show 'fade'
+		myAircraft = serverAircraftData[code]
 
 	getPlaneSpriteFor = (code) ->
 		sprite = aircraftSprites[code]
 		return sprite if sprite?
 		sprite =
-			speed: serverAircraftData[code].speed
+			code: code
 			marker: new google.maps.Marker
 				map: $scope.map
 				title: "F15 Strike Eagle"
@@ -191,31 +207,35 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 			else
 				infoWindow.open $scope.map, sprite.marker
 			isOpen = !isOpen
+			followAircraft code
 		aircraftSprites[code] = sprite
 
-	Socket.map.on 'acquire_control_challenge_response', (data) ->
-		if data.success
-			sprite = aircraftSprites[data.code]
-			sprite.marker.getMap().panTo sprite.marker.getPosition()
-			sprite.marker.setMap null
-			planeSprite.show 'fade'
-			myAircraft = serverAircraftData[data.code]
 
-
-	animateSinglePlane = (plane) ->
+	animateSinglePlane = (plane, planeServerData) ->
 		plane.tween?.stop()
+		next =
+			lat: planeServerData.position[0]
+			lng: planeServerData.position[1]
+			heading: planeServerData.heading
 		currentPos = plane.marker.getPosition()
 		if currentPos?
-			currentPos =
+			current =
 				lat: currentPos.lat()
 				lng: currentPos.lng()
-			plane.tween = tween = new TWEEN.Tween(currentPos)
-			tween.to plane.position, 5000/plane.speed
+				heading: currentHeading
+			plane.tween = tween = new TWEEN.Tween(current)
+			tween.to next, 2000
 			tween.onUpdate ->
 				plane.marker.setPosition new google.maps.LatLng(@lat, @lng)
+				if (myAircraft? and planeServerData.code is myAircraft.code)
+					planeSprite.css
+						transform: "rotate(#{@heading}rad)"
+					$scope.map.panTo plane.marker.getPosition()
 			tween.onComplete ->
 				plane.tween = null
+				if (myAircraft? and planeServerData.code is myAircraft.code)
+					currentHeading = next.heading
 			tween.start()
 		else
-			plane.marker.setPosition new google.maps.LatLng(plane.position.lat, plane.position.lng)
+			plane.marker.setPosition new google.maps.LatLng(next.lat, next.lng)
 

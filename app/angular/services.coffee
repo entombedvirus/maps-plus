@@ -5,32 +5,31 @@
 ###
 
 socketServer = document.domain
-namespaces = ['ctrl', 'chat', 'map']
+namespaces = ['ctrl', 'map']
 
-angular.module("NetTalk.services", [])
-.value("version", "0.2.2")
-.factory("Socket", ($rootScope) ->
+app = angular.module("NetTalk.services", [])
 
-			socketService = {}
-			sockets = {}
-			opts =
-				reconnect: false
+app.value("version", "0.2.2")
 
-			for namespace in namespaces
-				sockets[namespace] = io.connect(socketServer + '/' +  namespace, opts)
-				do (namespace) ->
-					socketService[namespace] =
-						emit: (event, data) ->
-							sockets[namespace].json.emit event, data
+for namespace in namespaces
+	opts =
+		reconnect: false
+	do (namespace) ->
+		app.factory(namespace + "Socket", ($rootScope) ->
+			socket = io.connect(socketServer + '/' +  namespace, opts)
 
-						on: (event, callback) ->
-							sockets[namespace].on event, (data) ->
-								$rootScope.$apply ->
-									callback data
+			{
+				emit: (event, data) ->
+					socket.json.emit event, data
 
-			socketService
-)
-.factory("Animation", ($window) ->
+				on: (event, callback) ->
+					socket.on event, (data) ->
+						$rootScope.$apply ->
+							callback data
+			}
+		)
+
+app.factory("Animation", ($window) ->
 	requestId = null
 	paused = false
 	animate = ->
@@ -48,4 +47,10 @@ angular.module("NetTalk.services", [])
 			$window.cancelAnimationFrame(requestId) if requestId?
 	}
 )
+
+app.factory "aircraftControls", ->
+	code: null
+	position: null
+	heading: 0 #due north
+	speed: 0
 

@@ -1,5 +1,5 @@
 module.exports =  class PlaneManager
-	DEFAULT_SPEED = 80
+	DEFAULT_SPEED = 800
 	PRESET_POSITIONS =
 		goldenGatePark: [37.76847577247013, -122.49210834503174]
 		crissyField: [37.80542699570327, -122.46883749961853]
@@ -13,6 +13,7 @@ module.exports =  class PlaneManager
 				code: code
 				position: pos
 				speed: DEFAULT_SPEED
+				heading: 0 # due north
 
 	findByCode: (code) ->
 		@planes[code]
