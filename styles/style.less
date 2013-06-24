@@ -29,6 +29,31 @@ body { height: 100% }
 	z-index: 1;
 }
 
+#splash {
+	display: table;
+	width: 100%;
+	height: 90px;
+	padding: 10px;
+	position: absolute;
+	top: 50%;
+	left: 0;
+	margin-top: -45px;
+	background-color: rgba(240, 240, 240, 0.6);
+	border-top: 1px solid #ccc;
+	border-bottom: 1px solid #ccc;
+	z-index: 10;
+
+	.inputArea {
+		display: table-cell;
+		text-align: center;
+		vertical-align: middle;
+	}
+
+	input[type=text] {
+		margin: 10px
+	}
+}
+
 #userControls {
 	height: 100%;
 

@@ -9,6 +9,15 @@ app = angular.module('NetTalk.controllers')
 app.controller 'AppCtrl', (Animation) ->
 	Animation.start()
 
+app.controller 'SplashCtrl', ($scope, $window, Socket) ->
+	$scope.controlChallengeWasSuccessful = false
+	$scope.onSubmit = ->
+		Socket.ctrl.emit 'acquire_control_challenge',
+			code: $scope.userEnteredCode
+	Socket.ctrl.on 'acquire_control_challenge_response', (data) ->
+		$scope.controlChallengeWasSuccessful = data.success
+
+
 app.controller 'UserControlsCtrl', ($scope, $timeout, $window, Socket) ->
 	curX = 0
 	curY = 0
@@ -163,14 +172,26 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, Socket) ->
 	Socket.ctrl.on 'peer_inactive', onPeerDisconnected
 
 	getPlaneSpriteFor = (code) ->
-		sprite = aircraftSprites[code] ?=
+		sprite = aircraftSprites[code]
+		return sprite if sprite?
+		sprite =
 			speed: serverAircraftData[code].speed
 			marker: new google.maps.Marker
 				map: $scope.map
+				title: "F15 Strike Eagle"
+		infoWindow = new google.maps.InfoWindow
+			content: "<p>Code: #{code}</p>"
+			maxWidth: 200
+		isOpen = false
+		google.maps.event.addListener infoWindow, "closeclick", ->
+			isOpen = false
 		google.maps.event.addListener sprite.marker, "click", ->
-			Socket.map.emit 'acquire_control_challenge',
-				code: code
-		sprite
+			if isOpen
+				infoWindow.close()
+			else
+				infoWindow.open $scope.map, sprite.marker
+			isOpen = !isOpen
+		aircraftSprites[code] = sprite
 
 	Socket.map.on 'acquire_control_challenge_response', (data) ->
 		if data.success

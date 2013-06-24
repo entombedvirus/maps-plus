@@ -2,6 +2,14 @@ extends layout
 
 block content
   section(ng-controller="AppCtrl")
+  section(id="splash", ng-controller="SplashCtrl", ng-hide="controlChallengeWasSuccessful")
+    .inputArea
+      p.
+        Please go to 
+        PLACEHOLDER
+        to get the code.
+      input(type="text", ng-model="userEnteredCode", class="input-small", placeholder="Enter code from browser", ng-maxlength="4")
+      button(ng-click="onSubmit()", class="btn btn-primary") Submit
   section(id="userControls", ng-controller="UserControlsCtrl", class="container-fluid", on-touch-move="onUserTouchMove")
     img(id="arrow", src="images/direction_arrow.png", width="128", height="128", alt="")
   script(src='http://code.jquery.com/jquery-2.0.2.js')

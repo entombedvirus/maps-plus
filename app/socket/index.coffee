@@ -26,7 +26,8 @@ exports.configure = (io) ->
 		socket.on "user_ctrl", (ctrlData) ->
 			socket.set "lastActivityTimestamp", Date.now()
 			startTimeoutTimer() unless timer?
-			socket.broadcast.emit "sync_ui", ctrlData
+			pairedSocket = getPairedSocketFor(socket)
+			pairedSocket.emit "sync_ui", ctrlData if pairedSocket?
 
 		socket.on "disconnect", ->
 			console.log "client disconnected", socket.id
@@ -36,14 +37,6 @@ exports.configure = (io) ->
 		socket.on "peer_inactive", ->
 			socket.broadcast.emit "peer_inactive",
 				client_id: socket.id
-
-	mapSocket = io.of('/map')
-	mapSocket.on "connection", (socket) ->
-		socket.emit "aircraftData", planeManager.getDataForBroadcast()
-
-		socket.on "map_position_changed", (data) ->
-			planeManager.updatePosition data.code, data.position
-			socket.broadcast.emit "plane_position_changed", data
 
 		socket.on "acquire_control_challenge", (data) ->
 			success = planeManager.acquireControl data.code, socket.client_id
@@ -56,3 +49,12 @@ exports.configure = (io) ->
 				socket.emit "acquire_control_challenge_response",
 					success: false
 					code: data.code
+
+	mapSocket = io.of('/map')
+	mapSocket.on "connection", (socket) ->
+		socket.emit "aircraftData", planeManager.getDataForBroadcast()
+
+		socket.on "map_position_changed", (data) ->
+			planeManager.updatePosition data.code, data.position
+			socket.broadcast.emit "plane_position_changed", data
+
