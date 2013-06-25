@@ -22,7 +22,8 @@ app.controller 'SplashCtrl', ($scope, $window, $location, ctrlSocket, aircraftCo
 		aircraftControls.speed = data.speed
 		$location.path "/controls"
 
-app.controller 'UserControlsCtrl', ($scope, $timeout, $window, ctrlSocket, aircraftControls) ->
+app.controller 'UserControlsCtrl', ($scope, $timeout, $window, $location, ctrlSocket, aircraftControls) ->
+	$location.path("/splash") unless aircraftControls.code?
 	curX = 0
 	curY = 0
 	arrow = angular.element document.getElementById('arrow')
