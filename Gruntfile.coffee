@@ -29,33 +29,39 @@ module.exports = (grunt) ->
 				]
 
 		copy:
-			client:
+			dev:
 				files: [
-						expand: true
-						dot: true
-						cwd: appConfig.root + '/app'
-						src: ['angular/**']
-						dest: appConfig.tmp + '/public'
+					expand: true
+					dot: true
+					cwd: appConfig.root + '/app'
+					src: ['angular/**']
+					dest: appConfig.tmp + '/public'
 				,
-						expand: true
-						dot: true
-						cwd: appConfig.root
-						src: ['public/**']
-						dest: appConfig.tmp
+					expand: true
+					dot: true
+					cwd: appConfig.root
+					src: ['public/**']
+					dest: appConfig.tmp
+				,
+					expand: true
+					dot: true
+					cwd: appConfig.root
+					src: ['app/**', '!app/angular/**']
+					dest: appConfig.tmp
+				,
+					expand: true
+					dot: true
+					cwd: appConfig.root
+					src: ['views/**']
+					dest: appConfig.tmp
 				]
-			server:
+			dist:
 				files: [
-						expand: true
-						dot: true
-						cwd: appConfig.root
-						src: ['app/**', '!app/angular/**']
-						dest: appConfig.tmp
-					,
-						expand: true
-						dot: true
-						cwd: appConfig.root
-						src: ['views/**']
-						dest: appConfig.tmp
+					expand: true
+					dot: true
+					cwd: appConfig.tmp
+					src: ['**/*.{js,json,css,jade,html,png,ico}']
+					dest: appConfig.dist
 				]
 
 		coffee:
@@ -123,7 +129,8 @@ module.exports = (grunt) ->
 				options:
 					logConcurrentOutput: true
 
-	grunt.registerTask 'build', ['copy', 'coffee', 'less']
+	grunt.registerTask 'build', ['copy:dev', 'coffee', 'less']
 	grunt.registerTask 'dev', ['clean', 'build', 'concurrent:dev']
+	grunt.registerTask 'dist', ['clean', 'build', 'ngmin', 'copy:dist']
 
 	grunt.registerTask 'default', ['dev']

@@ -1,6 +1,6 @@
 #!/bin/sh
 
 killall node
-nohup node .tmp/app/index.js &
+nohup node dist/app/index.js &
 
 echo "node restarted..."
