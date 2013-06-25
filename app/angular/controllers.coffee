@@ -109,9 +109,12 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, mapSocket, ctrlSocket) ->
 	serverAircraftData = new Object()
 	aircraftSprites = new Object()
 	myAircraft = null
+	mapLoaded = false
 
 	$scope.onMapLoad = ->
 		#startPositionBroadcast()
+		mapLoaded = true
+		drawAircrafts(serverAircraftData)
 		google.maps.event.addListener $scope.map, "rightclick", (e) ->
 			console.log "rightclick"
 			new google.maps.Marker
@@ -120,18 +123,19 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, mapSocket, ctrlSocket) ->
 			console.log "pos", e.latLng.toString()
 
 	onPlanePositionChanged = (code, data) ->
-		plane = getPlaneSpriteFor(data.code)
-		if $scope.map?
-			new google.maps.Marker
-				map: $scope.map
-				position: new google.maps.LatLng data.position...
-		plane.tween || animateSinglePlane(plane, data)
+		plane = getPlaneSpriteFor(data)
+		#if $scope.map?
+			#new google.maps.Marker
+				#map: $scope.map
+				#position: new google.maps.LatLng data.position...
+		animateSinglePlane(plane, data)
 
-	mapSocket.on 'aircraftData', (aircraftData) ->
+	drawAircrafts =  (aircraftData) ->
 		serverAircraftData = aircraftData
 		# TODO: make the user choose this
-		onPlanePositionChanged(code, aircraft) for code, aircraft of serverAircraftData
-
+		if mapLoaded
+			onPlanePositionChanged(code, aircraft) for code, aircraft of serverAircraftData
+	mapSocket.on 'aircraftData', drawAircrafts
 
 	onPeerDisconnected = (data) ->
 		peerDisconnected = true
@@ -142,7 +146,7 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, mapSocket, ctrlSocket) ->
 	followAircraft = (code) ->
 		if myAircraft?
 			planeSprite.hide 'fade'
-			oldPlaneSprite = getPlaneSpriteFor myAircraft.code
+			oldPlaneSprite = getPlaneSpriteFor myAircraft
 			oldPlaneSprite.marker.setMap $scope.map
 		sprite = aircraftSprites[code]
 		sprite.marker.getMap().panTo sprite.marker.getPosition()
@@ -150,47 +154,63 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, mapSocket, ctrlSocket) ->
 		planeSprite.show 'fade'
 		myAircraft = serverAircraftData[code]
 
-	getPlaneSpriteFor = (code) ->
+	getPlaneSpriteFor = (aircraftData) ->
+		code = aircraftData.code
 		sprite = aircraftSprites[code]
 		return sprite if sprite?
 		sprite =
 			code: code
 			marker: new google.maps.Marker
 				map: $scope.map
+				position: new google.maps.LatLng(aircraftData.position[0], aircraftData.position[1])
 				title: "F15 Strike Eagle"
 		infoWindow = new google.maps.InfoWindow
 			content: "<p>Code: #{code}</p>"
 			maxWidth: 200
 		infoWindow.open $scope.map, sprite.marker
-		google.maps.event.addListener sprite.marker, "click", ->
+		google.maps.event.addListener sprite.marker, "dblclick", ->
 			followAircraft code
 		aircraftSprites[code] = sprite
 
-	animateSinglePlane = (plane, planeServerData) ->
-		plane.tween?.stop()
+	tweenHeading = (plane, aircraftData, duration) ->
+		return unless (myAircraft? and aircraftData.code is myAircraft.code)
+		plane.tweens.heading?.stop()
+		current =
+			heading: currentHeading
 		next =
-			lat: planeServerData.position[0]
-			lng: planeServerData.position[1]
-			heading: planeServerData.heading
+			heading: aircraftData.heading
+
+		if (Math.abs(current.heading - next.heading) > Math.PI)
+			current.heading += 2 * (if current.heading < 0 then Math.PI else -Math.PI)
+		plane.tweens.heading = new TWEEN.Tween(current)
+			.to(next, duration)
+			.onUpdate(->
+				currentHeading = @heading
+				planeSprite.css
+					transform: "rotate(#{@heading}rad)"
+			)
+			.start()
+
+	tweenPosition = (plane, aircraftData, duration) ->
+		plane.tweens.position?.stop()
 		currentPos = plane.marker.getPosition()
-		if currentPos?
-			current =
-				lat: currentPos.lat()
-				lng: currentPos.lng()
-				heading: currentHeading
-			plane.tween = tween = new TWEEN.Tween(current)
-			tween.to next, 2000
-			tween.onUpdate ->
+		current =
+			lat: currentPos.lat()
+			lng: currentPos.lng()
+		next =
+			lat: aircraftData.position[0]
+			lng: aircraftData.position[1]
+		plane.tweens.position = new TWEEN.Tween(current)
+			.to(next, duration)
+			.onUpdate(->
 				plane.marker.setPosition new google.maps.LatLng(@lat, @lng)
-				if (myAircraft? and planeServerData.code is myAircraft.code)
-					planeSprite.css
-						transform: "rotate(#{@heading}rad)"
+				if (myAircraft? and aircraftData.code is myAircraft.code)
 					$scope.map.panTo plane.marker.getPosition()
-			tween.onComplete ->
-				plane.tween = null
-				if (myAircraft? and planeServerData.code is myAircraft.code)
-					currentHeading = next.heading
-			tween.start()
-		else
-			plane.marker.setPosition new google.maps.LatLng(next.lat, next.lng)
+			)
+			.start()
+
+	animateSinglePlane = (plane, planeServerData) ->
+		plane.tweens ?= new Object
+		tweenHeading(plane, planeServerData, 100)
+		tweenPosition(plane, planeServerData, 2000)
 
