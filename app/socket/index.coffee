@@ -7,6 +7,7 @@ exports.configure = (io) ->
 	###
 		Socket.IO config
 	###
+	hasNewDataToBroadcast = false
 
 	ctrlSockets = io.of('/ctrl')
 	ctrlSockets.on "connection", (socket) ->
@@ -30,6 +31,7 @@ exports.configure = (io) ->
 			if aircraft?
 				aircraft.position = data.position
 				aircraft.heading = data.heading
+			hasNewDataToBroadcast = true
 
 		socket.on "disconnect", ->
 			console.log "client disconnected", socket.id
@@ -60,10 +62,12 @@ exports.configure = (io) ->
 	mapSockets = io.of('/map')
 
 	do broadcastAircraftPositions = ->
-		setTimeout broadcastAircraftPositions, 500
+		return if hasNewDataToBroadcast is false
 		mapSockets.emit "aircraftData", planeManager.getDataForBroadcast()
+		hasNewDataToBroadcast = false
+	setInterval broadcastAircraftPositions, 500
 
 	mapSockets.on "connection", (socket) ->
-		socket.on "map_position_changed", (data) ->
-			socket.broadcast.emit "plane_position_changed", data
+		socket.json.emit "aircraftData", planeManager.getDataForBroadcast()
+
 

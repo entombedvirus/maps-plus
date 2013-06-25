@@ -34,6 +34,7 @@ app.controller 'UserControlsCtrl', ($scope, $timeout, $window, $location, ctrlSo
 	arrowRotation = 0
 	lastActivityTimestamp = new Date().getTime()
 	paused = false
+	hasNewDataToBroadcast = false
 
 	timer = null
 	do startIdleTimer = ->
@@ -52,6 +53,7 @@ app.controller 'UserControlsCtrl', ($scope, $timeout, $window, $location, ctrlSo
 		e = e.touches?[0] ? e
 		curX = e.originalEvent.pageX
 		curY = e.originalEvent.pageY
+		hasNewDataToBroadcast = true
 
 	do animateArrow = ->
 		newAngle = aircraftControls.heading
@@ -85,13 +87,14 @@ app.controller 'UserControlsCtrl', ($scope, $timeout, $window, $location, ctrlSo
 
 	do broadcastUserState = ->
 		$timeout broadcastUserState, 500
+		return if paused or hasNewDataToBroadcast is false
 		ctrlData =
 			heading: aircraftControls.heading
 			code: aircraftControls.code
 			position: aircraftControls.position
 
-		return if paused
 		ctrlSocket.emit 'user_ctrl', ctrlData
+		hasNewDataToBroadcast = false
 		console.log "broadcasting state", ctrlData.position
 	
 	resume = ->
@@ -116,54 +119,12 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, mapSocket, ctrlSocket) ->
 				position: e.latLng
 			console.log "pos", e.latLng.toString()
 
-	#do animatePlaneSprite = ->
-		#return unless myAircraft?
-		## ensure a smooth animation when the angles wrap around
-		#nextHeading = myAircraft.heading
-		#diff = Math.abs(nextHeading - currentHeading)
-		#if diff > 180
-			#if nextHeading > 0
-				#currentHeading += 360
-			#else
-				#currentHeading += -360
-		#tween = new TWEEN.Tween({angle: currentHeading}).to({angle: nextHeading}, 250)
-		#tween.onUpdate ->
-			#planeSprite.css
-				#transform: "rotate(#{@angle}deg)"
-		#tween.onComplete ->
-			#currentHeading = @angle
-			#animatePlaneSprite()
-		#tween.start()
-
-	#onSyncUI = (ctrlData) ->
-		#angle = ctrlData.angle
-		#nextHeading = (angle * 180/Math.PI) + 90
-		#if peerDisconnected is true
-			#peerDisconnected = false
-			#updateMap()
-	#ctrlSocket.on 'sync_ui', onSyncUI
-	
-	#updateMap = ->
-		#curCenter = $scope.map.getCenter()
-		#return unless curCenter?
-		#$window.requestAnimationFrame updateMap unless peerDisconnected
-		#newCenter = google.maps.geometry.spherical.computeOffset curCenter, SPEED, currentHeading
-		#$scope.map.panTo newCenter
-	
-	#startPositionBroadcast = ->
-		#lastBroadcastedPosition = null
-		#do broadcastMapPosition = ->
-			#$timeout broadcastMapPosition, 1000
-			#return unless myAircraft?
-			#curCenter = $scope.map.getCenter()
-			#if !lastBroadcastedPosition? or !curCenter.equals(lastBroadcastedPosition)
-				#lastBroadcastedPosition = curCenter
-				#mapSocket.emit 'map_position_changed', 
-					#code: myAircraft.code
-					#position: [curCenter.lat(), curCenter.lng()]
-
 	onPlanePositionChanged = (code, data) ->
 		plane = getPlaneSpriteFor(data.code)
+		if $scope.map?
+			new google.maps.Marker
+				map: $scope.map
+				position: new google.maps.LatLng data.position...
 		plane.tween || animateSinglePlane(plane, data)
 
 	mapSocket.on 'aircraftData', (aircraftData) ->
