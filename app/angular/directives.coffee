@@ -43,8 +43,7 @@ app.directive "googleMaps", ->
 					disableDefaultUI: true
 				)
 
-				cb = scope[attrs.onload]
-				cb(map)
+				scope.$eval attrs.onload
 	}
 
 app.directive 'onTouchMove', ->

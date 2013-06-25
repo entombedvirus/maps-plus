@@ -2,15 +2,13 @@ extends layout
 
 block content
   section(ng-controller="AppCtrl")
-  section(ng-controller="MapCtrl", class="viewport")
-    google-maps(name="map", onload="onMapLoad()", center="37.78317372823109,237.5632660095215", zoom="13")
-  section(id="msgPanel", ng-controller="SocketCtrl")
-    button(ng-click="ping()") Ping!
-    p {{response}}
+  section(ng-view, class="viewport")
 
+block javascripts
   //script(src='/lib/bootstrap/js/bootstrap.js')
-  script(src='//maps.googleapis.com/maps/api/js?key=AIzaSyAh7KYXTPPuG0Iw5UWKr2HlHqoYhpSllPU&sensor=true')
+  script(src='//maps.googleapis.com/maps/api/js?libraries=geometry&key=AIzaSyAh7KYXTPPuG0Iw5UWKr2HlHqoYhpSllPU&sensor=true')
   script(src='/lib/socket.io/socket.io.js')
+  script(src='/lib/jquery/jquery.js')
   script(src='/lib/angular/angular.js')
   script(src='/lib/angular/angular-resource.js')
   script(src='/lib/polyfills/requestAnimationFrame.js')

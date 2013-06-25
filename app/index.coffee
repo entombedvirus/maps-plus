@@ -36,11 +36,6 @@ app.use express["static"] app.get("public_path")
 app.get "/", routes.index
 app.get "/partials/:name", routes.partials
 
-# Services
-users = require "./services/users"
-app.get "/users", users.list
-app.get "/users/:id", users.get
-
 ###
 	Server startup
 ###

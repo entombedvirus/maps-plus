@@ -9,7 +9,7 @@ app = angular.module('NetTalk.controllers')
 app.controller 'AppCtrl', (Animation) ->
 	Animation.start()
 
-app.controller 'SplashCtrl', ($scope, $window, ctrlSocket, aircraftControls) ->
+app.controller 'SplashCtrl', ($scope, $window, $location, ctrlSocket, aircraftControls) ->
 	$scope.controlChallengeWasSuccessful = false
 	$scope.onSubmit = ->
 		ctrlSocket.emit 'acquire_control_challenge',
@@ -20,6 +20,7 @@ app.controller 'SplashCtrl', ($scope, $window, ctrlSocket, aircraftControls) ->
 		aircraftControls.position = data.position
 		aircraftControls.heading = data.heading
 		aircraftControls.speed = data.speed
+		$location.path "/controls"
 
 app.controller 'UserControlsCtrl', ($scope, $timeout, $window, ctrlSocket, aircraftControls) ->
 	curX = 0
@@ -198,18 +199,10 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, mapSocket, ctrlSocket) ->
 		infoWindow = new google.maps.InfoWindow
 			content: "<p>Code: #{code}</p>"
 			maxWidth: 200
-		isOpen = false
-		google.maps.event.addListener infoWindow, "closeclick", ->
-			isOpen = false
+		infoWindow.open $scope.map, sprite.marker
 		google.maps.event.addListener sprite.marker, "click", ->
-			if isOpen
-				infoWindow.close()
-			else
-				infoWindow.open $scope.map, sprite.marker
-			isOpen = !isOpen
 			followAircraft code
 		aircraftSprites[code] = sprite
-
 
 	animateSinglePlane = (plane, planeServerData) ->
 		plane.tween?.stop()

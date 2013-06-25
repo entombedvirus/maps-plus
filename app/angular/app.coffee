@@ -7,11 +7,15 @@
 deps = ["NetTalk.controllers", "NetTalk.filters", "NetTalk.services", "NetTalk.directives"]
 angular.module(dep, []) for dep in deps
 
-angular.module("NetTalk", deps)
-.config ["$routeProvider",
-	($routeProvider) ->
-		$routeProvider.when "/home", {templateUrl: "partials/home", controller: 'MapCtrl'}
-		$routeProvider.when "/socket", {templateUrl: "partials/socket", controller: 'SocketCtrl'}
-		$routeProvider.otherwise {redirectTo: "/home"}
-]
+app = angular.module "NetTalk", deps.concat('ng')
+
+app.config ($routeProvider) ->
+	$routeProvider.when "/map", {templateUrl: "partials/map", controller: 'MapCtrl'}
+	$routeProvider.when "/splash", {templateUrl: "partials/splash", controller: 'SplashCtrl'}
+	$routeProvider.when "/controls", {templateUrl: "partials/controls", controller: 'UserControlsCtrl'}
+
+	if /mobile/i.test window.navigator.userAgent
+		$routeProvider.otherwise {redirectTo: "/splash"}
+	else
+		$routeProvider.otherwise {redirectTo: "/map"}
 
