@@ -56,6 +56,12 @@ module.exports = (grunt) ->
 					cwd: appConfig.root
 					src: ['views/**']
 					dest: appConfig.tmp
+				,
+					expand: true
+					dot: true
+					cwd: appConfig.root
+					src: 'server.coffee'
+					dest: appConfig.tmp
 				]
 			dist:
 				files: [
@@ -84,6 +90,12 @@ module.exports = (grunt) ->
 					expand: true
 					cwd: appConfig.tmp
 					src: 'app/{,*/}*.coffee'
+					dest: appConfig.tmp
+					ext: '.js'
+				,
+					expand: true
+					cwd: appConfig.tmp
+					src: 'server.coffee'
 					dest: appConfig.tmp
 					ext: '.js'
 				]
@@ -131,8 +143,13 @@ module.exports = (grunt) ->
 				options:
 					logConcurrentOutput: true
 
-	grunt.registerTask 'build', ['copy:client', 'copy:server', 'coffee', 'less']
+	grunt.registerTask 'prepareDistDir', ->
+		{exec} = require 'child_process'
+		exec "mkdir -p #{appConfig.dist}/{logs,pids}", (err, stdout, stderr) ->
+			throw err if err
+
+	grunt.registerTask 'build', ['copy:dev', 'coffee', 'less']
 	grunt.registerTask 'dev', ['clean', 'build', 'concurrent:dev']
-	grunt.registerTask 'dist', ['clean', 'build', 'ngmin', 'copy:dist']
+	grunt.registerTask 'dist', ['clean', 'prepareDistDir', 'build', 'ngmin', 'copy:dist']
 
 	grunt.registerTask 'default', ['dev']

@@ -16,8 +16,6 @@ app = express()
 app.configure "development", "testing", "production", ->
 	config.setEnv app.settings.env
 
-app.set "ipaddr", config.HOSTNAME
-app.set "port", config.PORT
 app.set "views", path.join __dirname, '..', config.VIEWS_PATH
 app.set "view engine", config.VIEWS_ENGINE
 app.set "public_path", path.join __dirname, '..', config.PUBLIC_PATH
@@ -39,31 +37,11 @@ app.get "/partials/:name", routes.partials
 ###
 	Server startup
 ###
-
-serverStarted = ->
-	console.log "Server listening on http://#{app.get "ipaddr"}:#{app.get "port"}"
-
-start = ->
-	console.log "Process PID: ", process.pid
-	server = app.listen app.get('port'), app.get('ipaddr'), serverStarted
-
-	###
-		Socket.IO registration and configuration
-	###
-	io = require("socket.io").listen server
-	require("./socket").configure io
-	server
-
-if require.main is module
-	start()
-
-
+server = app.listen 8080
+io = require("socket.io").listen server
+require("./socket").configure io
 
 ###
 	Export app
 ###
-
-module.exports =
-	app: app
-	start: start
-
+module.exports = server

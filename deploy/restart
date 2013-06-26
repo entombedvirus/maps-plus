@@ -1,6 +1,6 @@
 #!/bin/sh
 
-killall node
-nohup node dist/app/index.js &
+kill `cat dist/pids/master.pid`
+nohup node dist/server.js &
 
 echo "node restarted..."
