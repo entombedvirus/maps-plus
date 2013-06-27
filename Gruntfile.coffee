@@ -29,7 +29,7 @@ module.exports = (grunt) ->
 				]
 
 		copy:
-			dev:
+			client:
 				files: [
 					expand: true
 					dot: true
@@ -42,7 +42,9 @@ module.exports = (grunt) ->
 					cwd: appConfig.root
 					src: ['public/**']
 					dest: appConfig.tmp
-				,
+				]
+			server:
+				files: [
 					expand: true
 					dot: true
 					cwd: appConfig.root
@@ -106,7 +108,7 @@ module.exports = (grunt) ->
 			options:
 				nospawn: true
 			server:
-				files: [appConfig.root + "/app/**/*.{coffee,js}", appConfig.root + "/views/**/*.jade", "!**/angular/**"]
+				files: [appConfig.root + "/app/**/*.{coffee,js,jade}", appConfig.root + "/views/**/*.jade", "!**/angular/**"]
 				tasks: ['copy:server', 'coffee:server', 'notify:watch']
 			client:
 				files: [appConfig.app + "/angular/{,*/}*.{coffee,js}"]
@@ -129,7 +131,7 @@ module.exports = (grunt) ->
 				options:
 					logConcurrentOutput: true
 
-	grunt.registerTask 'build', ['copy:dev', 'coffee', 'less']
+	grunt.registerTask 'build', ['copy:client', 'copy:server', 'coffee', 'less']
 	grunt.registerTask 'dev', ['clean', 'build', 'concurrent:dev']
 	grunt.registerTask 'dist', ['clean', 'build', 'ngmin', 'copy:dist']
 
