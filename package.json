@@ -24,7 +24,8 @@
     "jade": "0.28.2",
     "socket.io": "0.9.14",
     "uglify-js": "2.2.5",
-    "forever": "~0.10.8"
+    "forever": "~0.10.8",
+    "spdy": "~1.8.11"
   },
   "engines": {
     "node": ">=0.8"

@@ -37,7 +37,18 @@ app.get "/partials/:name", routes.partials
 ###
 	Server startup
 ###
-server = app.listen 8080
+
+spdy = require 'spdy'
+server = spdy.createServer(
+	require('http').Server
+	,
+		plain: true
+	,
+	app
+)
+#server = app.listen 8080
+
+server.listen 8080
 io = require("socket.io").listen server
 require("./socket").configure io
 
