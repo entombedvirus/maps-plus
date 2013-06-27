@@ -9,6 +9,7 @@ routes = require "./routes"
 
 app = express()
 
+
 ###
 	Configuration
 ###
@@ -30,8 +31,20 @@ app.use express["static"] app.get("public_path")
 	Routes config
 ###
 
+pushAsset = (asset, res) ->
+	try
+		res.push asset.uri, asset.headers, (err, stream) ->
+			return if err?
+			stream.end asset.contents
+	catch error
+		# do nothing
+
 # Views
-app.get "/", routes.index
+app.get "/", (req, res) ->
+	if res.isSpdy and res.push?
+		pushAsset asset, res for asset in config.assets
+	routes.index(req, res)
+
 app.get "/partials/:name", routes.partials
 
 ###
@@ -46,8 +59,6 @@ server = spdy.createServer(
 	,
 	app
 )
-#server = app.listen 8080
-
 server.listen 8080
 io = require("socket.io").listen server
 require("./socket").configure io
