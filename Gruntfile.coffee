@@ -148,7 +148,7 @@ module.exports = (grunt) ->
 		exec "mkdir -p #{appConfig.dist}/{logs,pids}", (err, stdout, stderr) ->
 			throw err if err
 
-	grunt.registerTask 'build', ['copy:dev', 'coffee', 'less']
+	grunt.registerTask 'build', ['copy', 'coffee', 'less']
 	grunt.registerTask 'dev', ['clean', 'build', 'concurrent:dev']
 	grunt.registerTask 'dist', ['clean', 'prepareDistDir', 'build', 'ngmin', 'copy:dist']
 
