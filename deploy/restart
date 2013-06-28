@@ -1,7 +1,5 @@
 #!/bin/sh
 
-kill `cat dist/pids/master.pid`
-sleep 2
 nohup node dist/server.js &
 
 echo "node restarted..."
