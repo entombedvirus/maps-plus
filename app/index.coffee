@@ -6,6 +6,7 @@ config = require "./config"
 express = require "express"
 path = require "path"
 routes = require "./routes"
+fs = require 'fs'
 
 app = express()
 
@@ -37,12 +38,32 @@ pushAsset = (asset, res) ->
 			return if err?
 			stream.end asset.contents
 	catch error
-		# do nothing
+		console.error "Error while pushing asset: #{asset}. Error: ", error
+
+pushTemplate = (templateName, res) ->
+	try
+		res.push '/partials/map'
+		,
+			'Content-type': 'text/html'
+		,
+		(err, stream) ->
+			return if err?
+			templateFile = templateName + '.jade'
+			fs.readFile app.get('views') + templateFile, (err, data) ->
+				if err?
+					console.error "Error while pushing template: #{templateName}. Error: ", err
+					return
+
+				templateFunc = require('jade').compile(data)
+				stream.end templateFunc(locals = {})
+	catch error
+		console.error "Error while pushing template: #{templateName}. Error: ", error
 
 # Views
 app.get "/", (req, res) ->
 	if res.isSpdy and res.push?
 		pushAsset asset, res for asset in config.assets
+		pushTemplate '/partials/map', res
 	routes.index(req, res)
 
 app.get "/partials/:name", routes.partials
