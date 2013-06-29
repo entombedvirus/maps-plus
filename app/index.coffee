@@ -36,7 +36,8 @@ pushAsset = (asset, res) ->
 	try
 		res.push asset.uri, asset.headers, (err, stream) ->
 			return if err?
-			stream.end asset.contents
+			fs.createReadStream(asset.file).pipe stream
+				
 	catch error
 		console.error "Error while pushing asset: #{asset}. Error: ", error
 

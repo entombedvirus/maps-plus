@@ -1,3 +1,4 @@
+path = require 'path'
 exports.setEnv = (environment) ->
 
 	###
@@ -34,18 +35,20 @@ exports.setEnv = (environment) ->
 	exports.assets = assets = []
 
 	for cssFile in cssFiles
+		filename = __dirname + "/../../public/#{cssFile}"
 		assets.push
 			uri: cssFile
 			headers:
 				'Content-type': 'text/css'
-			contents: fs.readFileSync __dirname + "/../../public/#{cssFile}"
+			file: path.resolve filename
 
 	for jsFile in jsFiles
+		filename = __dirname + "/../../public/#{jsFile}"
 		assets.push
 			uri: jsFile
 			headers:
 				'Content-type': 'application/javascript'
-			contents: fs.readFileSync __dirname + "/../../public/#{jsFile}"
+			file: path.resolve filename
 
 	###
 	Environment specific config
