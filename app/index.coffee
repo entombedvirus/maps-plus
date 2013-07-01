@@ -36,6 +36,8 @@ pushAsset = (asset, res) ->
 	try
 		res.push asset.uri, asset.headers, (err, stream) ->
 			return if err?
+			stream.on 'error', (error) ->
+				console.error "SPDY stream error while pushing: #{asset.uri}", error
 			fs.createReadStream(asset.file).pipe stream
 				
 	catch error
@@ -49,6 +51,9 @@ pushTemplate = (templateName, res) ->
 		,
 		(err, stream) ->
 			return if err?
+			stream.on 'error', (error) ->
+				console.error "SPDY stream error while pushing template: #{templateName}", error
+
 			templateFile = templateName + '.jade'
 			fs.readFile app.get('views') + templateFile, (err, data) ->
 				if err?
