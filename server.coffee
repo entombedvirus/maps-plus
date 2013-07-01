@@ -3,6 +3,9 @@ fs = require('fs')
 
 NUM_WORKERS = 1
 
+# Let the OS do load balancing between node workers
+cluster.schedulingPolicy = cluster.SCHED_NONE
+
 if cluster.isMaster
 	workerCount = 0
 
