@@ -106,6 +106,6 @@ module.exports = (grunt) ->
 
 	grunt.registerTask 'build', ['coffee', 'less']
 	grunt.registerTask 'dev', ['clean', 'build', 'concurrent:dev']
-	grunt.registerTask 'dist', ['build', 'copy:dist', 'ngmin']
+	grunt.registerTask 'dist', ['clean', 'build', 'copy:dist', 'ngmin']
 
 	grunt.registerTask 'default', ['dev']
