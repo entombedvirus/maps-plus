@@ -35,7 +35,7 @@ module.exports = (grunt) ->
 					expand: true
 					dot: true
 					cwd: appConfig.root
-					src: ['**/*.{js,json,css,jade,html,png,ico}', "!#{appConfig.dist}/**", '!node_modules/**']
+					src: ['{server,public}/**/*.{js,json,css,jade,html,png,ico}']
 					dest: appConfig.dist
 				]
 
@@ -104,13 +104,8 @@ module.exports = (grunt) ->
 				options:
 					logConcurrentOutput: true
 
-	grunt.registerTask 'prepareDistDir', ->
-		{exec} = require 'child_process'
-		exec "mkdir -p #{appConfig.dist}/{logs,pids}", (err, stdout, stderr) ->
-			throw err if err
-
 	grunt.registerTask 'build', ['coffee', 'less']
 	grunt.registerTask 'dev', ['clean', 'build', 'concurrent:dev']
-	grunt.registerTask 'dist', ['prepareDistDir', 'build', 'copy:dist', 'ngmin']
+	grunt.registerTask 'dist', ['build', 'copy:dist', 'ngmin']
 
 	grunt.registerTask 'default', ['dev']
