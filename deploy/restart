@@ -1,5 +1,10 @@
 #!/bin/sh
 
-nohup node dist/server.js &
+[ -f master.pid ] && kill `cat master.pid`
+
+nohup node dist/server/cluster.js &
+master_pid=$!
+
+echo $master_pid > master.pid
 
 echo "node restarted..."
