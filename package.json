@@ -1,23 +1,19 @@
 {
-  "name": "angular-espresso",
-  "description": "A project template for an AngularJS app with an Express, Socket.IO backend written in CoffeeScript",
-  "version": "0.2.2",
+  "name": "maps-plus",
+  "description": "A project that allows combines the use of Google Maps, Angular, CoffeeScript, Express, Socket.IO and Grunt as a learning exercise",
+  "version": "0.0.1",
   "repository": {
     "type": "git",
-    "url": "https://github.com/wmora/angular-espresso.git"
+    "url": "https://github.com/entombedvirus/maps-plus.git"
   },
-  "author": "William Mora <william.r.mora@gmail.com>",
-  "contributors": [
-    {
-      "name": "William Mora",
-      "email": "william.r.mora@gmail.com"
-    }
-  ],
+  "author": "Rohith Ravi <entombedvirus@gmail.com>",
   "keywords": [
     "node",
     "express",
     "coffeescript",
-    "socket.io"
+    "socket.io",
+	  "google maps",
+	  "grunt"
   ],
   "dependencies": {
     "express": "3.1.1",
@@ -31,7 +27,7 @@
     "node": ">=0.8"
   },
   "scripts": {
-    "start": "node app"
+    "start": "node server/index"
   },
   "devDependencies": {
     "grunt": "~0.4.1",
