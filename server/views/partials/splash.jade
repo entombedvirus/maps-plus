@@ -4,5 +4,5 @@ section(id="splash", ng-controller="SplashCtrl", ng-hide="controlChallengeWasSuc
       Please go to 
       PLACEHOLDER
       to get the code.
-    input(type="text", ng-model="userEnteredCode", class="input-small", placeholder="Enter code from browser", ng-maxlength="4")
+    input(type="text", ng-model="userEnteredCode", class="input-small", placeholder="Enter code from browser", ng-maxlength="4", autocorrect="off", autocapitalize="off")
     button(ng-click="onSubmit()", class="btn btn-primary") Submit
