@@ -10,7 +10,6 @@ fs = require 'fs'
 
 app = express()
 
-
 ###
 	Configuration
 ###
@@ -43,9 +42,9 @@ pushAsset = (asset, res) ->
 	catch error
 		console.error "Error while pushing asset: #{asset}. Error: ", error
 
-pushTemplate = (templateName, res) ->
+pushTemplate = (templateName, req, res) ->
 	try
-		res.push '/partials/map'
+		res.push '/' + templateName
 		,
 			'Content-type': 'text/html'
 		,
@@ -54,14 +53,11 @@ pushTemplate = (templateName, res) ->
 			stream.on 'error', (error) ->
 				console.error "SPDY stream error while pushing template: #{templateName}", error
 
-			templateFile = templateName + '.jade'
-			fs.readFile app.get('views') + templateFile, (err, data) ->
+			app.render templateName, (err, renderedString) ->
 				if err?
 					console.error "Error while pushing template: #{templateName}. Error: ", err
 					return
-
-				templateFunc = require('jade').compile(data)
-				stream.end templateFunc(locals = {})
+				stream.end renderedString
 	catch error
 		console.error "Error while pushing template: #{templateName}. Error: ", error
 
@@ -69,7 +65,7 @@ pushTemplate = (templateName, res) ->
 app.get "/", (req, res) ->
 	if res.isSpdy and res.push?
 		pushAsset asset, res for asset in config.assets
-		pushTemplate '/partials/map', res
+		pushTemplate 'partials/map', req, res
 	routes.index(req, res)
 
 app.get "/partials/:name", routes.partials
