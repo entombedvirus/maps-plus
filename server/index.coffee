@@ -18,7 +18,7 @@ app = express()
 app.configure "development", "testing", "production", ->
 	config.setEnv app.settings.env
 
-app.set "views", path.join __dirname, '..', config.VIEWS_PATH
+app.set "views", config.VIEWS_PATH
 app.set "view engine", config.VIEWS_ENGINE
 app.set "public_path", path.join __dirname, '..', config.PUBLIC_PATH
 app.use express.logger("dev")

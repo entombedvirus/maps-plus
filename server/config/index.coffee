@@ -8,7 +8,7 @@ exports.setEnv = (environment) ->
 	exports.PORT = 8080
 	exports.PUBLIC_PATH = "public"
 	exports.VIEWS_ENGINE = "jade"
-	exports.VIEWS_PATH = "views"
+	exports.VIEWS_PATH = "server/views"
 	exports.IMAGES_PATH = "images"
 
 	fs = require 'fs'

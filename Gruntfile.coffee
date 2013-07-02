@@ -8,8 +8,8 @@ module.exports = (grunt) ->
 
 	appConfig =
 		root: path.resolve(__dirname)
-		app: path.resolve(__dirname + '/app')
-		tmp: path.resolve(__dirname + '/.tmp')
+		server: path.resolve(__dirname + '/server')
+		client: path.resolve(__dirname + '/public')
 		dist: path.resolve(__dirname + '/dist')
 
 	grunt.initConfig
@@ -22,53 +22,20 @@ module.exports = (grunt) ->
 					message: 'auto-compilation complete'
 
 		clean:
-			all:
-				src: [
-					appConfig.tmp
-					appConfig.dist
-				]
+			server:
+				src: ['server/**/*.{js,map}']
+			client:
+				src: ['public/angular/**/*.{js,map}', 'public/styles/*.css']
+			dist:
+				src: [appConfig.dist]
 
 		copy:
-			client:
-				files: [
-					expand: true
-					dot: true
-					cwd: appConfig.root + '/app'
-					src: ['angular/**']
-					dest: appConfig.tmp + '/public'
-				,
-					expand: true
-					dot: true
-					cwd: appConfig.root
-					src: ['public/**']
-					dest: appConfig.tmp
-				]
-			server:
-				files: [
-					expand: true
-					dot: true
-					cwd: appConfig.root
-					src: ['app/**', '!app/angular/**']
-					dest: appConfig.tmp
-				,
-					expand: true
-					dot: true
-					cwd: appConfig.root
-					src: ['views/**']
-					dest: appConfig.tmp
-				,
-					expand: true
-					dot: true
-					cwd: appConfig.root
-					src: 'server.coffee'
-					dest: appConfig.tmp
-				]
 			dist:
 				files: [
 					expand: true
 					dot: true
-					cwd: appConfig.tmp
-					src: ['**/*.{js,json,css,jade,html,png,ico}']
+					cwd: appConfig.root
+					src: ['**/*.{js,json,css,jade,html,png,ico}', "!#{appConfig.dist}/**", '!node_modules/**']
 					dest: appConfig.dist
 				]
 
@@ -78,9 +45,9 @@ module.exports = (grunt) ->
 					sourceMap: true
 				files: [
 					expand: true
-					cwd: appConfig.tmp
-					src: 'public/angular/{,*/}*.coffee'
-					dest: appConfig.tmp
+					cwd: appConfig.client
+					src: '**/*.coffee'
+					dest: appConfig.client
 					ext: '.js'
 				]
 			server:
@@ -88,15 +55,9 @@ module.exports = (grunt) ->
 					sourceMap: true
 				files: [
 					expand: true
-					cwd: appConfig.tmp
-					src: 'app/{,*/}*.coffee'
-					dest: appConfig.tmp
-					ext: '.js'
-				,
-					expand: true
-					cwd: appConfig.tmp
-					src: 'server.coffee'
-					dest: appConfig.tmp
+					cwd: appConfig.server
+					src: '**/*.coffee'
+					dest: appConfig.server
 					ext: '.js'
 				]
 
@@ -104,36 +65,36 @@ module.exports = (grunt) ->
 			client:
 				files: [
 					expand: true
-					cwd: appConfig.tmp + '/public/angular/'
-					src: ['**/*.js']
-					dest: appConfig.tmp + '/public/angular/'
+					cwd: appConfig.dist
+					src: ['public/angular/**/*.js']
+					dest: appConfig.dist
 				]
 
 		less:
 			all:
 				files: [
-					src: appConfig.root + '/styles/*.less'
-					dest: appConfig.tmp + '/public/styles/style.css'
+					src: appConfig.client + '/styles/*.less'
+					dest: appConfig.client + '/styles/style.css'
 				]
 
 		watch:
 			options:
 				nospawn: true
 			server:
-				files: [appConfig.root + "/app/**/*.{coffee,js,jade}", appConfig.root + "/views/**/*.jade", "!**/angular/**"]
-				tasks: ['copy:server', 'coffee:server', 'notify:watch']
+				files: [appConfig.server + "/**/*.coffee"]
+				tasks: ['coffee:server', 'notify:watch']
 			client:
-				files: [appConfig.app + "/angular/{,*/}*.{coffee,js}"]
-				tasks: ['copy:client', 'coffee:client', 'notify:watch']
+				files: [appConfig.client + "/angular/{*,}/*.coffee}"]
+				tasks: ['coffee:client', 'notify:watch']
 			css:
-				files: [appConfig.root + "/styles/*.less"]
+				files: [appConfig.client + "/styles/*.less"]
 				tasks: ['less', 'notify:watch']
 
 		nodemon:
 			dev:
 				options:
-					file: path.join appConfig.tmp, 'app', 'index.js'
-					watchedFolders: [appConfig.tmp + '/app']
+					file: path.join appConfig.server, 'index.js'
+					watchedFolders: [appConfig.server]
 					debug: true
 					delay: 1
 
@@ -148,8 +109,8 @@ module.exports = (grunt) ->
 		exec "mkdir -p #{appConfig.dist}/{logs,pids}", (err, stdout, stderr) ->
 			throw err if err
 
-	grunt.registerTask 'build', ['copy', 'coffee', 'less']
+	grunt.registerTask 'build', ['coffee', 'less']
 	grunt.registerTask 'dev', ['clean', 'build', 'concurrent:dev']
-	grunt.registerTask 'dist', ['clean', 'prepareDistDir', 'build', 'ngmin', 'copy:dist']
+	grunt.registerTask 'dist', ['prepareDistDir', 'build', 'copy:dist', 'ngmin']
 
 	grunt.registerTask 'default', ['dev']

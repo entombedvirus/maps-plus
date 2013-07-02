@@ -1,6 +1,12 @@
+# ignore genrated JS and source map file
 *.js
 *.map
+# but not the external libs
 !/public/lib/*/*.js
+
+# ignore generated CSS files
+public/styles/*.css
+
 .idea/workspace.xml
 node_modules/
 .tmp/
