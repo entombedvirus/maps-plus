@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ProjectTasksOptions">
-    <TaskOptions isEnabled="true">
+    <TaskOptions isEnabled="false">
       <option name="arguments" value="--map --compile $FilePath$" />
       <option name="checkSyntaxErrors" value="true" />
       <option name="description" value="Compiles .coffee files into .js files" />
       <option name="exitCodeBehavior" value="ERROR" />
       <option name="fileExtension" value="coffee" />
-      <option name="immediateSync" value="true" />
+      <option name="immediateSync" value="false" />
       <option name="name" value="CoffeeScript" />
       <option name="output" value="$FileNameWithoutExtension$.js:$FileNameWithoutExtension$.map" />
       <option name="outputFilters">

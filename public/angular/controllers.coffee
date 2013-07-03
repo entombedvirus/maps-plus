@@ -22,72 +22,41 @@ app.controller 'SplashCtrl', ($scope, $window, $location, ctrlSocket, aircraftCo
 		aircraftControls.speed = data.speed
 		$location.path "/controls"
 
-app.controller 'UserControlsCtrl', ($scope, $timeout, $window, $location, ctrlSocket, aircraftControls) ->
-	$location.path("/splash") unless aircraftControls.code?
-	curX = 0
-	curY = 0
-	arrow = angular.element document.getElementById('arrow')
-	arrowX = arrow.offset().left
-	arrowY = arrow.offset().top
-	centerX = arrowX + (arrow.width() / 2)
-	centerY = arrowY +  (arrow.height() / 2)
-	arrowRotation = 0
+app.controller 'UserControlsCtrl', ($scope, $timeout, $window, $location, $log, ctrlSocket, aircraftControls) ->
+	$location.path("/splash") unless aircraftControls.position?
+
 	lastActivityTimestamp = new Date().getTime()
-	paused = false
+	arrowRotation = null
+	lastActivityTimestamp = null
 	hasNewDataToBroadcast = false
 
-	timer = null
-	do startIdleTimer = ->
-		idleTime = (new Date()).getTime() - lastActivityTimestamp
-		if idleTime > 5000
-			timer = null
-			paused = true
-			ctrlSocket.emit 'peer_inactive'
-		else
-			timer = setTimeout startIdleTimer, 5000
-			resume() if paused
-	
-	$scope.onUserTouchMove = (e) ->
-		lastActivityTimestamp = (new Date()).getTime()
-		startIdleTimer() unless timer?
-		e = e.touches?[0] ? e
-		curX = e.originalEvent.pageX
-		curY = e.originalEvent.pageY
+	$scope.$on 'rotate_angle_changed', (event, newAngle) ->
+		event.stopPropagation()
+		lastActivityTimestamp = new Date().getTime()
 		hasNewDataToBroadcast = true
+		arrowRotation = newAngle
 
-	do animateArrow = ->
-		newAngle = aircraftControls.heading
-		# ensure a smooth animation when the angles wrap around
-		diff = Math.abs(newAngle - arrowRotation)
-		if diff > Math.PI
-			if newAngle > 0
-				arrowRotation += 2 * Math.PI
-			else
-				arrowRotation += -2 * Math.PI
-		tween = new TWEEN.Tween({angle: arrowRotation}).to({angle: newAngle}, 25)
-		tween.onUpdate ->
-			arrow.css
-				transform: "rotate(#{@angle}rad)"
-		tween.onComplete ->
-			arrowRotation = newAngle
-			animateArrow()
-		tween.start()
+	$scope.$on '$viewContentLoaded', ->
+		updateAircraftPosition() unless positionUpdateTimer?
+		broadcastUserState() unless broadcastTimer?
 
-	do updateAircraftPosition = ->
-		$timeout updateAircraftPosition, 1000 / 60
-		return if paused
-		curLatLng = new google.maps.LatLng aircraftControls.position...
+	positionUpdateTimer = null
+	updateAircraftPosition = ->
+		positionUpdateTimer = $timeout updateAircraftPosition, 1000 / 60
+		return unless hasNewDataToBroadcast
+		curLatLng = new google.maps.LatLng aircraftControls.position[0], aircraftControls.position[1]
 		nextLatLng = google.maps.geometry.spherical.computeOffset(
 			curLatLng,
 			aircraftControls.speed,
-			aircraftControls.heading * 180 / Math.PI
+			arrowRotation * 180 / Math.PI
 		)
 		aircraftControls.position = [nextLatLng.lat(), nextLatLng.lng()]
-		aircraftControls.heading = Math.atan2(curY - centerY, curX - centerX) + Math.PI/2
+		aircraftControls.heading = arrowRotation
 
-	do broadcastUserState = ->
-		$timeout broadcastUserState, 500
-		return if paused or hasNewDataToBroadcast is false
+	broadcastTimer = null
+	broadcastUserState = ->
+		broadcastTimer = $timeout broadcastUserState, 500
+		return unless hasNewDataToBroadcast
 		ctrlData =
 			heading: aircraftControls.heading
 			code: aircraftControls.code
@@ -95,11 +64,8 @@ app.controller 'UserControlsCtrl', ($scope, $timeout, $window, $location, ctrlSo
 
 		ctrlSocket.emit 'user_ctrl', ctrlData
 		hasNewDataToBroadcast = false
-		console.log "broadcasting state", ctrlData.position
-	
-	resume = ->
-		paused = false
-		broadcastUserState()
+		$log.info "broadcasting state", ctrlData.position
+	@
 
 app.controller 'MapCtrl', ($scope, $timeout, $window, mapSocket, ctrlSocket) ->
 	#SPEED = 40

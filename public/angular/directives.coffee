@@ -67,15 +67,53 @@ app.directive "googleAnalytics", ->
 			elem.replaceWith script
 			script
 	}
-app.directive 'onTouchMove', ->
 
+app.directive 'rotate', ($log, $document) ->
 	{
 		restrict: 'A',
-		
 		compile: ->
+			$log.info 'rotate COMPILE TIME'
 			(scope, elem, attrs) ->
-				elem.on 'touchmove mousemove', (e) ->
+				parentNode = elem.parent()
+				curX = curY = 0
+				arrowTween = null
+				centerX = centerY = 0
+				arrowRotation = 0
+
+				do calculateCenter = ->
+					arrowX = elem.offset().left
+					arrowY = elem.offset().top
+					centerX = arrowX + (elem.width() / 2)
+					centerY = arrowY +  (elem.height() / 2)
+
+				parentNode.on 'touchmove mousemove', (e) ->
 					e.preventDefault()
-					cb = scope[attrs.onTouchMove]
-					cb(e)
+					e = e.touches?[0] ? e
+					curX = e.originalEvent.pageX
+					curY = e.originalEvent.pageY
+					animateArrow()
+
+				$document.on 'orientationchange', (e) ->
+					console.log "orientationchange event fired"
+					calculateCenter()
+
+				animateArrow = ->
+					arrowTween?.stop()
+					newAngle = Math.atan2(curY - centerY, curX - centerX) + Math.PI/2
+					# ensure a smooth animation when the angles wrap around
+					diff = Math.abs(newAngle - arrowRotation)
+					if diff > Math.PI
+						if newAngle > 0
+							arrowRotation += 2 * Math.PI
+						else
+							arrowRotation += -2 * Math.PI
+					arrowTween = new TWEEN.Tween({angle: arrowRotation}).to({angle: newAngle}, 25)
+					arrowTween.onUpdate ->
+						arrowRotation = @angle
+						scope.$emit 'rotate_angle_changed', @angle
+						elem.css
+							transform: "rotate(#{@angle}rad)"
+					arrowTween.start()
+
+
 	}

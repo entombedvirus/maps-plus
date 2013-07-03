@@ -84,7 +84,7 @@ module.exports = (grunt) ->
 				files: [appConfig.server + "/**/*.coffee"]
 				tasks: ['coffee:server', 'notify:watch']
 			client:
-				files: [appConfig.client + "/angular/{*,}/*.coffee}"]
+				files: [appConfig.client + "/**/*.coffee"]
 				tasks: ['coffee:client', 'notify:watch']
 			css:
 				files: [appConfig.client + "/styles/*.less"]
