@@ -1,6 +1,7 @@
 PEER_IDLE_TIMEOUT_MILLIS = 5000
 
 planeManager = require('../modules/plane_manager')
+util = require 'util'
 
 exports.configure = (io) ->
 
@@ -28,10 +29,10 @@ exports.configure = (io) ->
 			socket.set "lastActivityTimestamp", Date.now()
 			startTimeoutTimer() unless timer?
 			aircraft = planeManager.findByCode data.code
-			if aircraft?
+			if aircraft? and util.isArray(data.position) and typeof data.position[0] is 'number'
 				aircraft.position = data.position
 				aircraft.heading = data.heading
-			hasNewDataToBroadcast = true
+				hasNewDataToBroadcast = true
 
 		socket.on "disconnect", ->
 			console.log "client disconnected", socket.id

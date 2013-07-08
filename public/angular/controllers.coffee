@@ -20,30 +20,33 @@ app.controller 'SplashCtrl', ($scope, $window, $location, ctrlSocket, aircraftCo
 		aircraftControls.position = data.position
 		aircraftControls.heading = data.heading
 		aircraftControls.speed = data.speed
-		$location.path "/controls"
+		if data.success is true
+			$location.path "/controls"
 
 app.controller 'UserControlsCtrl', ($scope, $timeout, $window, $location, $log, ctrlSocket, aircraftControls) ->
 	$location.path("/splash") unless aircraftControls.position?
 
-	lastActivityTimestamp = new Date().getTime()
-	arrowRotation = null
-	lastActivityTimestamp = null
+	arrowRotation = 0
 	hasNewDataToBroadcast = false
 
-	$scope.$on 'rotate_angle_changed', (event, newAngle) ->
-		event.stopPropagation()
-		lastActivityTimestamp = new Date().getTime()
-		hasNewDataToBroadcast = true
-		arrowRotation = newAngle
+	$scope.$watch 'rotationValue', (newAngle) ->
+		if newAngle?
+			hasNewDataToBroadcast = true
+			arrowRotation = newAngle
 
 	$scope.$on '$viewContentLoaded', ->
-		updateAircraftPosition() unless positionUpdateTimer?
-		broadcastUserState() unless broadcastTimer?
+		if aircraftControls.position?
+			updateAircraftPosition() unless positionUpdateTimer?
+			broadcastUserState() unless broadcastTimer?
 
 	positionUpdateTimer = null
 	updateAircraftPosition = ->
 		positionUpdateTimer = $timeout updateAircraftPosition, 1000 / 60
-		return unless hasNewDataToBroadcast
+		if hasNewDataToBroadcast is false or
+		isNaN(arrowRotation) is true or
+		angular.isArray(aircraftControls.position) is false or
+		isNaN(aircraftControls.position[0]) is true
+			return
 		curLatLng = new google.maps.LatLng aircraftControls.position[0], aircraftControls.position[1]
 		nextLatLng = google.maps.geometry.spherical.computeOffset(
 			curLatLng,
