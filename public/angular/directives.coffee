@@ -68,52 +68,41 @@ app.directive "googleAnalytics", ->
 			script
 	}
 
-app.directive 'rotate', ($log, $document) ->
+app.directive 'rotateControls', ($log, $document) ->
 	{
-		restrict: 'A',
-		compile: ->
-			$log.info 'rotate COMPILE TIME'
-			(scope, elem, attrs) ->
-				parentNode = elem.parent()
-				curX = curY = 0
-				arrowTween = null
-				centerX = centerY = 0
-				arrowRotation = 0
+		restrict: 'E',
+		scope: {
+			width: '@'
+			height: '@',
+			src: '@',
+			value: '='
+		},
+		template: '<img ng-src="{{src}}" alt="" width="{{width}}" height="{{height}}"/>',
+		link: (scope, elem, attrs) ->
+			parentNode = elem.parent()
+			curX = 0
+			curY = 0
+			centerX = 0
+			centerY = 0
+			newAngle = 0
+			arrow = elem.find('img')
 
-				do calculateCenter = ->
-					arrowX = elem.offset().left
-					arrowY = elem.offset().top
-					centerX = arrowX + (elem.width() / 2)
-					centerY = arrowY +  (elem.height() / 2)
+			do calculateCenter = ->
+				arrowX = elem.offset().left
+				arrowY = elem.offset().top
+				centerX = arrowX + (elem.width() / 2)
+				centerY = arrowY +  (elem.height() / 2)
 
-				parentNode.on 'touchmove mousemove', (e) ->
-					e.preventDefault()
-					e = e.touches?[0] ? e
-					curX = e.originalEvent.pageX
-					curY = e.originalEvent.pageY
-					animateArrow()
+			parentNode.on 'touchmove mousemove', (e) ->
+				e.preventDefault()
+				e = e.touches?[0] ? e
+				curX = e.originalEvent.pageX
+				curY = e.originalEvent.pageY
+				scope.value = newAngle = Math.atan2(curY - centerY, curX - centerX) + Math.PI/2
+				arrow.css
+					transform: "rotate(#{newAngle}rad)"
 
-				$document.on 'orientationchange', (e) ->
-					console.log "orientationchange event fired"
-					calculateCenter()
-
-				animateArrow = ->
-					arrowTween?.stop()
-					newAngle = Math.atan2(curY - centerY, curX - centerX) + Math.PI/2
-					# ensure a smooth animation when the angles wrap around
-					diff = Math.abs(newAngle - arrowRotation)
-					if diff > Math.PI
-						if newAngle > 0
-							arrowRotation += 2 * Math.PI
-						else
-							arrowRotation += -2 * Math.PI
-					arrowTween = new TWEEN.Tween({angle: arrowRotation}).to({angle: newAngle}, 25)
-					arrowTween.onUpdate ->
-						arrowRotation = @angle
-						scope.$emit 'rotate_angle_changed', @angle
-						elem.css
-							transform: "rotate(#{@angle}rad)"
-					arrowTween.start()
-
-
+			$document.on 'orientationchange', (e) ->
+				$log.info "orientationchange event fired"
+				calculateCenter()
 	}
