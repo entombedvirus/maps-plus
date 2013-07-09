@@ -87,6 +87,11 @@ app.directive "aircraft", ($log) ->
 							position: 'absolute'
 							transition: 'transform 2s'
 						)
+						aircraft.infoWindow = new google.maps.InfoWindow
+						  content: code
+						aircraft.icon.on 'click', =>
+							$log.info "click fired"
+							aircraft.infoWindow.open @getMap()
 
 					if aircraft.shouldTween
 						aircraft.tween?.stop()
@@ -105,7 +110,7 @@ app.directive "aircraft", ($log) ->
 					aircraft
 				onAdd: ->
 					panes = @getPanes()
-					overlayLayer = panes.overlayLayer
+					overlayLayer = panes.overlayMouseTarget
 					@parentDiv.appendTo overlayLayer
 				onRemove: ->
 					@parentDiv.remove()
@@ -125,6 +130,7 @@ app.directive "aircraft", ($log) ->
 						top: (posPixel.y - aircraft.icon.height()/2) + 'px'
 						left: (posPixel.x - aircraft.icon.width()/2) + 'px'
 						transform: "rotate(#{heading}rad)"
+					aircraft.infoWindow.setPosition posLatLng
 					null
 
 			overlay = new AircraftOverlay
