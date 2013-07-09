@@ -79,6 +79,7 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, mapSocket, ctrlSocket) ->
 	aircraftSprites = new Object()
 	myAircraft = null
 	mapLoaded = false
+	$scope.aircrafts = {}
 
 	$scope.onMapLoad = ->
 		#startPositionBroadcast()
@@ -100,7 +101,7 @@ app.controller 'MapCtrl', ($scope, $timeout, $window, mapSocket, ctrlSocket) ->
 		animateSinglePlane(plane, data)
 
 	drawAircrafts =  (aircraftData) ->
-		serverAircraftData = aircraftData
+		serverAircraftData = $scope.aircrafts = aircraftData
 		# TODO: make the user choose this
 		if mapLoaded
 			onPlanePositionChanged(code, aircraft) for code, aircraft of serverAircraftData

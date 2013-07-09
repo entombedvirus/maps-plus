@@ -1,31 +1,40 @@
 "use strict"
 
 ###
-  Directives
+	Directives
 ###
 
 app = angular.module("NetTalk.directives", ["ngResource"])
 
 app.directive "appVersion", ["version", (version) ->
-  (scope, elm, attrs) ->
-    elm.text version
+	(scope, elm, attrs) ->
+		elm.text version
 ]
 
-app.directive "googleMaps", ->
+app.directive "googleMap", ->
 	DEFAULT_ZOOM_LEVEL = 15
 	GoogleMaps = google.maps
 	GoogleMaps.visualRefresh = true
 
 	{
 		restrict: 'E',
-		#replace: true,
+		controller: ($scope, $element, $attrs, $q) ->
+			mapLoad = $q.defer()
+
+			@setMap = (map) ->
+				@map = map
+				mapLoad.resolve map
+
+			@getMapPromise = ->
+				mapLoad.promise
+
 		compile: (elem, attrs, transclude) ->
 			div = angular.element('<div id="mapView"/>')
 			div.css({display: 'block'})
 			#elem.replaceWith div
 			elem.append div
 
-			(scope, elem, attrs) ->
+			(scope, elem, attrs, controller) ->
 				parts = attrs.center?.split ','
 				if parts?
 					lat = parseFloat(parts[0])
@@ -33,7 +42,7 @@ app.directive "googleMaps", ->
 				else
 					lat = 37.75549928195783
 					lng = -122.45375823974608
-				map = scope[attrs.name]  = new GoogleMaps.Map(
+				scope[attrs.name] = map = new GoogleMaps.Map(
 					div[0]
 				,
 					center: new GoogleMaps.LatLng lat, lng
@@ -43,7 +52,38 @@ app.directive "googleMaps", ->
 					disableDefaultUI: true
 				)
 
+				controller.setMap map
 				scope.$eval attrs.onload
+
+	}
+
+app.directive "aircraft", ($log) ->
+	{
+		restrict: 'E',
+		require: '^googleMap'
+		scope:
+			code: '@'
+			lat: '@'
+			lng: '@'
+			heading: '@'
+		compile: ->
+			markers = {}
+
+			(scope, elem, attrs, googleMapCtrl) ->
+				attrs.$observe 'code', ->
+					markers[scope.code] ?= new google.maps.Marker
+						icon: 'images/F15-Strike-Eagle-48px.png'
+					marker = markers[scope.code]
+					mapPromise = googleMapCtrl.getMapPromise()
+					mapPromise.then (map) ->
+						marker.setMap map
+				updatePosition = ->
+					return unless scope.lat? and scope.lng? and scope.code?
+					marker = markers[scope.code]
+					marker?.setPosition new google.maps.LatLng scope.lat, scope.lng
+				attrs.$observe 'lng', updatePosition
+				attrs.$observe 'lat', updatePosition
+				attrs.$observe 'heading', updatePosition
 	}
 
 app.directive "googleAnalytics", ->
