@@ -67,23 +67,58 @@ app.directive "aircraft", ($log) ->
 			lng: '@'
 			heading: '@'
 		compile: ->
-			markers = {}
+			class AircraftOverlay extends google.maps.OverlayView
+				constructor: ->
+					@aircrafts = new Object
+					@parentDiv = angular.element("<div/>")
+				updatePosition: (code, lat, lng, heading) ->
+					@aircrafts[code] ?= new Object
+					angular.extend(
+						@aircrafts[code]
+					,
+						code: code
+						lat: lat
+						lng: lng
+						heading: heading
+					)
+					aircraft = @aircrafts[code]
+					aircraft.icon ?= angular.element("<img/>")
+					aircraft.icon.attr
+						src: 'images/F15-Strike-Eagle-48px.png'
+						width: '48px'
+						height: '48px'
+					aircraft.icon.appendTo @parentDiv
+					aircraft
+				onAdd: ->
+					panes = @getPanes()
+					overlayLayer = panes.overlayLayer
+					@parentDiv.appendTo overlayLayer
+				onRemove: ->
+					@parentDiv.remove()
+				draw: ->
+					projection = @getProjection()
+					for code, aircraft of @aircrafts
+						lat = aircraft.lat
+						lng = aircraft.lng
+						heading = aircraft.heading
+						posLatLng = new google.maps.LatLng(lat, lng)
+						posPixel = projection.fromLatLngToDivPixel posLatLng
+						aircraft.icon.css
+							position: 'absolute'
+							top: (posPixel.y - 24) + 'px'
+							left: (posPixel.x - 24) + 'px'
+							transform: "rotate(#{heading}rad)"
+					null
+
+			overlay = new AircraftOverlay
 
 			(scope, elem, attrs, googleMapCtrl) ->
-				attrs.$observe 'code', ->
-					markers[scope.code] ?= new google.maps.Marker
-						icon: 'images/F15-Strike-Eagle-48px.png'
-					marker = markers[scope.code]
-					mapPromise = googleMapCtrl.getMapPromise()
-					mapPromise.then (map) ->
-						marker.setMap map
-				updatePosition = ->
-					return unless scope.lat? and scope.lng? and scope.code?
-					marker = markers[scope.code]
-					marker?.setPosition new google.maps.LatLng scope.lat, scope.lng
-				attrs.$observe 'lng', updatePosition
-				attrs.$observe 'lat', updatePosition
-				attrs.$observe 'heading', updatePosition
+				mapPromise = googleMapCtrl.getMapPromise()
+				mapPromise.then (map) ->
+					overlay.setMap map
+				scope.$watch '"" + code + lat + lng + heading', ->
+					return unless scope.lat? and scope.lng? and scope.code? and scope.heading?
+					overlay.updatePosition scope.code, scope.lat, scope.lng, scope.heading
 	}
 
 app.directive "googleAnalytics", ->
