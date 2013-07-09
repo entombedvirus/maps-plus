@@ -1,5 +1,3 @@
-section(id="mapView", ng-controller="MapCtrl")
+section(id="mapView")
 	google-map(name="map", onload="onMapLoad(map)", center="37.78317372823109,237.5632660095215", zoom="13")
-		aircraft(ng-repeat="aircraft in aircrafts", code="{{aircraft.code}}", lat="{{aircraft.position[0]}}", lng="{{aircraft.position[1]}}", heading="{{aircraft.heading}}")
-	img(id="plane", src="images/glyphicons_038_airplane.png", width="48", height="48")
-
+		aircraft(ng-repeat="aircraft in aircrafts", aircraft-data="aircraft")

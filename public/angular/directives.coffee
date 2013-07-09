@@ -48,8 +48,8 @@ app.directive "googleMap", ->
 					center: new GoogleMaps.LatLng lat, lng
 					zoom: (attrs.zoom? && parseInt attrs.zoom) || DEFAULT_ZOOM_LEVEL
 					mapTypeId: GoogleMaps.MapTypeId.ROADMAP
-					draggable: false
-					disableDefaultUI: true
+					draggable: true
+					disableDefaultUI: false
 				)
 
 				controller.setMap map
@@ -62,32 +62,46 @@ app.directive "aircraft", ($log) ->
 		restrict: 'E',
 		require: '^googleMap'
 		scope:
-			code: '@'
-			lat: '@'
-			lng: '@'
-			heading: '@'
+			aircraftData: '='
 		compile: ->
 			class AircraftOverlay extends google.maps.OverlayView
 				constructor: ->
 					@aircrafts = new Object
 					@parentDiv = angular.element("<div/>")
 				updatePosition: (code, lat, lng, heading) ->
-					@aircrafts[code] ?= new Object
-					angular.extend(
-						@aircrafts[code]
-					,
+					aircraft = @aircrafts[code] ?=
 						code: code
 						lat: lat
 						lng: lng
-						heading: heading
-					)
-					aircraft = @aircrafts[code]
-					aircraft.icon ?= angular.element("<img/>")
-					aircraft.icon.attr
-						src: 'images/F15-Strike-Eagle-48px.png'
-						width: '48px'
-						height: '48px'
-					aircraft.icon.appendTo @parentDiv
+						shouldTween: false
+					aircraft.heading = heading
+					unless aircraft.icon?
+						aircraft.icon = angular.element("<img class='aircraft'/>")
+						aircraft.icon.appendTo @parentDiv
+						aircraft.icon
+						.attr(
+							src: 'images/F15-Strike-Eagle-48px.png'
+							width: '48px'
+							height: '48px'
+						).css(
+							position: 'absolute'
+							transition: 'transform 2s'
+						)
+
+					if aircraft.shouldTween
+						aircraft.tween?.stop()
+						aircraft.tween = new TWEEN.Tween(
+							aircraft
+						).to(
+							lat: lat
+							lng: lng
+						, 2000)
+						aircraft.tween.onUpdate =>
+							@updateSingleAircraftPosition aircraft
+						aircraft.tween.start()
+					else
+						aircraft.shouldTween = true
+						@updateSingleAircraftPosition @aircrafts[code]
 					aircraft
 				onAdd: ->
 					panes = @getPanes()
@@ -96,18 +110,21 @@ app.directive "aircraft", ($log) ->
 				onRemove: ->
 					@parentDiv.remove()
 				draw: ->
-					projection = @getProjection()
 					for code, aircraft of @aircrafts
-						lat = aircraft.lat
-						lng = aircraft.lng
-						heading = aircraft.heading
-						posLatLng = new google.maps.LatLng(lat, lng)
-						posPixel = projection.fromLatLngToDivPixel posLatLng
-						aircraft.icon.css
-							position: 'absolute'
-							top: (posPixel.y - 24) + 'px'
-							left: (posPixel.x - 24) + 'px'
-							transform: "rotate(#{heading}rad)"
+						@updateSingleAircraftPosition aircraft
+					null
+				updateSingleAircraftPosition: (aircraft) ->
+					projection = @getProjection()
+					return unless projection?
+					lat = aircraft.lat
+					lng = aircraft.lng
+					heading = aircraft.heading
+					posLatLng = new google.maps.LatLng(lat, lng)
+					posPixel = projection.fromLatLngToDivPixel posLatLng
+					aircraft.icon.css
+						top: (posPixel.y - aircraft.icon.height()/2) + 'px'
+						left: (posPixel.x - aircraft.icon.width()/2) + 'px'
+						transform: "rotate(#{heading}rad)"
 					null
 
 			overlay = new AircraftOverlay
@@ -115,10 +132,17 @@ app.directive "aircraft", ($log) ->
 			(scope, elem, attrs, googleMapCtrl) ->
 				mapPromise = googleMapCtrl.getMapPromise()
 				mapPromise.then (map) ->
-					overlay.setMap map
-				scope.$watch '"" + code + lat + lng + heading', ->
-					return unless scope.lat? and scope.lng? and scope.code? and scope.heading?
-					overlay.updatePosition scope.code, scope.lat, scope.lng, scope.heading
+					overlay.setMap map unless overlay.getMap()?
+				scope.$watch 'aircraftData', ->
+					return unless scope.aircraftData?
+					scope.code = scope.aircraftData.code
+					scope.lat = scope.aircraftData.lat
+					scope.lng = scope.aircraftData.lng
+					scope.heading = scope.aircraftData.heading
+					overlay.updatePosition scope.code,
+						parseFloat(scope.lat),
+						parseFloat(scope.lng),
+						parseFloat(scope.heading)
 	}
 
 app.directive "googleAnalytics", ->
