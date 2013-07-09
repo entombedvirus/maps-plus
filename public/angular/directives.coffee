@@ -90,7 +90,6 @@ app.directive "aircraft", ($log) ->
 						aircraft.infoWindow = new google.maps.InfoWindow
 						  content: code
 						aircraft.icon.on 'click', =>
-							$log.info "click fired"
 							aircraft.infoWindow.open @getMap()
 
 					if aircraft.shouldTween
